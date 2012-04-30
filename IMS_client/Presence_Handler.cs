@@ -39,34 +39,24 @@ namespace IMS_client
 
         public void Subscribe(string sip_uri)
         {
-
-            Message request = new Message();
-            request.set_request_line("SUBSCRIBE", sip_uri);
-            request.headers["Event"] = "presence";
-            request.headers["CSeq"] = "1" + " SUBSCRIBE";
-            request.headers["To"] = SipUtilities.sip_tag(sip_uri.Replace("sip:",""));
-            request.headers["From"] = SipUtilities.sip_tag(settings.ims_private_user_identity) + ";tag=" + SipUtilities.CreateTag();
-            stack.SendMessage(request);
+            this.app.presenceUA.remoteParty = new Address(sip_uri);
+            this.app.presenceUA.localParty = this.app.registerUA.localParty;
+            Message request = this.app.presenceUA.createRequest("SUBSCRIBE");
+            request.insertHeader(new Header("presence", "Event"));
+            this.app.presenceUA.sendRequest(request);
         }
-        /*
-         * 
-
-
-         */
-
+       
         public void Process_Request(Message request)
         {
             if (request.method.ToUpper().Contains("NOTIFY"))
             {
-                Message reply = stack.CreateResponse(SipResponseCodes.x200_Ok, request);
-                stack.SendMessage(reply);
                 if (request.headers.ContainsKey("Content-Length"))
                 {
-                    if (int.Parse(request.headers["Content-Length"]) != 0)
+                    if (request.body.Length > 0)
                     {
                         try
                         {
-                            XDocument x_doc = XDocument.Parse(request.message_body.Trim());
+                            XDocument x_doc = XDocument.Parse(request.body.Trim());
                             XName xname = x_doc.Root.Name;
                             string basic = "";
                             string note = "";
@@ -85,10 +75,9 @@ namespace IMS_client
                                         break;
                                 }
                             }
-
                             if (this.Presence_Changed_Event != null)
                             {
-                                this.Presence_Changed_Event(this, new PresenceChangedArgs(SipUtilities.GetSipUri(request.headers["From"]), basic, note));
+                                this.Presence_Changed_Event(this, new PresenceChangedArgs(request.first("From").value.ToString(), basic, note));
                             }
                         }
                         catch (Exception exception)
@@ -104,28 +93,7 @@ namespace IMS_client
 
         public void Publish(string sip_uri, string basic, string note,int expires)
         {
-            Message request = new Message();
-            request.set_request_line("PUBLISH", sip_uri);
-            request.headers["Event"] = "presence";
-            request.headers["P-Preferred-Identity"] = "<" + settings.ims_public_user_identity + ">";
-            request.headers["From"] = SipUtilities.sip_tag(settings.ims_private_user_identity) + ";tag=" + SipUtilities.CreateTag();
-            request.headers["To"] = SipUtilities.sip_tag(sip_uri.Replace("sip:", ""));
-            request.headers["CSeq"] = "21" + " PUBLISH";
-            request.headers["Content-Type"] = "application/pidf+xml";
-            
-            StringBuilder sb = new StringBuilder();
-            sb.Append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-            sb.Append("<presence xmlns=\"urn:ietf:params:xml:ns:pidf\" xmlns:im=\"urn:ietf:params:xml:ns:pidf:im\" entity=\"" + sip_uri + "\">\n");
-            sb.Append("<tuple id=\"Sharp_IMS_Client\">\n");
-            sb.Append("<status>\n");
-            sb.Append("<basic>" + basic + "</basic>\n");
-            sb.Append("</status>\n");
-            sb.Append("<note>" + note + "</note>\n");
-            sb.Append("</tuple>\n");
-            sb.Append("</presence>\n");
-            request.message_body = sb.ToString();
-            stack.SendMessage(request);
-            
+            this.app.publish(sip_uri, basic, note, expires);
         }
     }
 }

@@ -23,8 +23,8 @@ namespace IMS_client
         public  UserAgent registerUA { get; set; }
 
         private UserAgent callUA { get; set; }
-
         public UserAgent messageUA { get; set; }
+        public UserAgent presenceUA { get; set; }
 
         public event EventHandler<RawEventArgs> Raw_Recv_Event;
         public event EventHandler<RawEventArgs> Raw_Sent_Event;
@@ -57,17 +57,7 @@ namespace IMS_client
             this.transport = transport;
         }
 
-        public void Register(string uri)
-        {
-            if (this.Reg_Event != null)
-            {
-                this.Reg_Event(this, new RegistrationChangedEventArgs("Registering", null));
-            }
-            this.registerUA = new UserAgent(this.stack, null, false);
-            Message register_msg = this.registerUA.createRegister(new SIPURI(uri));
-            register_msg.insertHeader(new Header("3600", "Expires"));
-            this.registerUA.sendRequest(register_msg);
-        }
+        
 
         public void ReceiveDataCB(IAsyncResult asyncResult)
         {
@@ -250,23 +240,6 @@ namespace IMS_client
 
         }
 
-        public void Invite(string uri)
-        {
-            uri = checkURI(uri);
-            if (isRegistered())
-            {
-                this.callUA = new UserAgent(this.stack, null, false);
-                this.callUA.localParty = this.registerUA.localParty;
-                this.callUA.remoteParty = new Address(uri);
-                Message invite = this.callUA.createRequest("INVITE");
-                this.callUA.sendRequest(invite);
-            }
-            else
-            {
-                _log.Error("isRegistered failed in invite message");
-            }
-        }
-
         private string checkURI(string uri)
         {
             if (!uri.Contains("<sip:") && !uri.Contains("sip:"))
@@ -296,6 +269,10 @@ namespace IMS_client
 
         public void Register(string uri)
         {
+            if (this.Reg_Event != null)
+            {
+                this.Reg_Event(this, new RegistrationChangedEventArgs("Registering", null));
+            }
             this.registerUA = new UserAgent(this.stack, null, false);
             Message register_msg = this.registerUA.createRegister(new SIPURI(uri));
             register_msg.insertHeader(new Header("3600", "Expires"));
@@ -352,6 +329,33 @@ namespace IMS_client
             response.insertHeader(new Header("application/sdp", "Content-Type"));
             response.body = sdp.ToString();
             this.callUA.sendResponse(response);
+        }
+
+        internal void publish(string sip_uri, string basic, string note, int expires)
+        {
+            this.presenceUA = new UserAgent(this.stack, null, false);
+            this.presenceUA.localParty = this.registerUA.localParty;
+            this.presenceUA.remoteParty = new Address(sip_uri);
+
+
+            Message request = this.presenceUA.createRequest("PUBLISH");
+            request.insertHeader(new Header("presence", "Event"));
+            request.insertHeader(new Header(this.presenceUA.localParty.ToString(), "P-Preferred-Identity"));
+            request.insertHeader(new Header("application/pidf+xml", "Content-Type"));
+            
+            StringBuilder sb = new StringBuilder();
+            sb.Append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+            sb.Append("<presence xmlns=\"urn:ietf:params:xml:ns:pidf\" xmlns:im=\"urn:ietf:params:xml:ns:pidf:im\" entity=\"" + sip_uri + "\">\n");
+            sb.Append("<tuple id=\"Sharp_IMS_Client\">\n");
+            sb.Append("<status>\n");
+            sb.Append("<basic>" + basic + "</basic>\n");
+            sb.Append("</status>\n");
+            sb.Append("<note>" + note + "</note>\n");
+            sb.Append("</tuple>\n");
+            sb.Append("</presence>\n");
+
+            request.body = sb.ToString();
+            this.presenceUA.sendRequest(request);
         }
     }
 }

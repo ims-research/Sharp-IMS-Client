@@ -27,7 +27,7 @@ namespace IMS_client
     /// <summary>
     /// Interaction logic for Window1.xaml
     /// </summary>
-    public partial class Main_window : Window,SIPApp
+    public partial class Main_window : Window
     {
         #region Global_Variables
 
@@ -395,7 +395,7 @@ namespace IMS_client
                     }
                 case "CANCEL":
                     {
-                        call_handler.Cancel_call(message);
+                        call_handler.Cancel_call(request);
                         break;
                     }
                 case "ACK":
@@ -425,6 +425,17 @@ namespace IMS_client
                 case "REFER":
                 case "SUBSCRIBE":
                 case "NOTIFY":
+                    {
+                        if (this.app.presenceUA == null)
+                        {
+                            this.app.presenceUA = new UserAgent(this.sip_stack);
+                            this.app.presenceUA.localParty = this.app.registerUA.localParty;
+                            this.app.presenceUA.remoteParty = new Address(request.uri.ToString());
+                        }
+                        Message m = this.app.presenceUA.createResponse(200, "OK");
+                        this.app.presenceUA.sendResponse(m);
+                        break;
+                    }
                 case "PUBLISH":
                 case "INFO":
                 default:
