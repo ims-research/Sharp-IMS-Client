@@ -18,18 +18,18 @@ using System.Globalization;
 using System.Threading;
 using System.Text;
 using System.Text.RegularExpressions;
-using SipStack;
+using SIPLib;
 
 namespace IMS_client
 {
     /// <summary>
     /// Interaction logic for Window1.xaml
     /// </summary>
-    public partial class Main_window : Window
+    public partial class Main_window : Window,SIPApp
     {
         #region Global_Variables
 
-        ClientSipStack sip_stack;
+        SIPStack sip_stack;
         Preferences settings;
         Address_Book address_book;
 
@@ -73,6 +73,10 @@ namespace IMS_client
             }
         }
         #endregion
+
+        #region SIP_APP
+
+        
 
         public Main_window()
         {
@@ -169,12 +173,17 @@ namespace IMS_client
         }
 
         #region Startup_Methods
+
+        public static TransportInfo createTransport(string listen_ip, int listen_port)
+        {
+            return new TransportInfo(IPAddress.Parse(listen_ip), listen_port, System.Net.Sockets.ProtocolType.Udp);
+        }
+
         private void Create_Stack()
         {
             string myHost = System.Net.Dns.GetHostName();
             System.Net.IPHostEntry myIPs = System.Net.Dns.GetHostEntry(myHost);
-
-            
+          
             int port = 6789;
 
             if (settings.ims_use_detected_ip)
@@ -188,16 +197,23 @@ namespace IMS_client
             }
             settings.ims_port = port;
 
-            sip_stack = new ClientSipStack(IPAddress.Parse(settings.ims_ip_address), port);
-            sip_stack.normal_route = "<sip:"+settings.ims_proxy_cscf_hostname + ":" + settings.ims_proxy_cscf_port+">" ;
+            TransportInfo local_transport = createTransport(settings.ims_ip_address, port);
+            SIPApp app = new SIPApp(local_transport);
 
-            sip_stack.Raw_Sent_Event += new EventHandler<RawEventArgs>(stack_Raw_Sent_Event);
-            sip_stack.Raw_Recv_Event += new EventHandler<RawEventArgs>(stack_Raw_Recv_Event);
-            sip_stack.Request_Recv_Event += new EventHandler<SipMessageEventArgs>(stack_Request_Recv_Event);
-            sip_stack.Response_Recv_Event += new EventHandler<SipMessageEventArgs>(stack_Response_Recv_Event);
-            sip_stack.Sip_Sent_Event += new EventHandler<SipMessageEventArgs>(stack_Sip_Sent_Event);
-            sip_stack.Error_Event += new EventHandler<StackErrorEventArgs>(stack_Error_Event);
-            sip_stack.Reg_Event += new EventHandler<RegistrationChangedEventArgs>(stack_Reg_Event);
+            SIPStack sip_stack = new SIPStack(app);
+            
+            // TODO
+            //sip_stack.uri.user = "alice";
+            sip_stack.proxy_ip = settings.ims_proxy_cscf_hostname;
+            sip_stack.proxy_port = settings.ims_proxy_cscf_port;
+
+            app.Raw_Sent_Event += new EventHandler<RawEventArgs>(stack_Raw_Sent_Event);
+            app.Raw_Recv_Event += new EventHandler<RawEventArgs>(stack_Raw_Recv_Event);
+            app.Request_Recv_Event += new EventHandler<SipMessageEventArgs>(stack_Request_Recv_Event);
+            app.Response_Recv_Event += new EventHandler<SipMessageEventArgs>(stack_Response_Recv_Event);
+            app.Sip_Sent_Event += new EventHandler<SipMessageEventArgs>(stack_Sip_Sent_Event);
+            app.Error_Event += new EventHandler<StackErrorEventArgs>(stack_Error_Event);
+            app.Reg_Event += new EventHandler<RegistrationChangedEventArgs>(stack_Reg_Event);
         }
 
         void stack_Sip_Sent_Event(object sender, SipMessageEventArgs e)

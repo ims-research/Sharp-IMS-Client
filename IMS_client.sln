@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IMS_client", "IMS_client\IMS_client.csproj", "{24E07920-09F7-4244-AAA3-0C3C46C8D878}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SipStack", "..\SipStack\SipStack\SipStack.csproj", "{A3950122-0AD2-423F-A151-1A7D6AE36A7A}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,13 +19,6 @@ Global
 		{24E07920-09F7-4244-AAA3-0C3C46C8D878}.Release|Any CPU.Build.0 = Release|Any CPU
 		{24E07920-09F7-4244-AAA3-0C3C46C8D878}.Release|x86.ActiveCfg = Release|x86
 		{24E07920-09F7-4244-AAA3-0C3C46C8D878}.Release|x86.Build.0 = Release|x86
-		{A3950122-0AD2-423F-A151-1A7D6AE36A7A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A3950122-0AD2-423F-A151-1A7D6AE36A7A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A3950122-0AD2-423F-A151-1A7D6AE36A7A}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{A3950122-0AD2-423F-A151-1A7D6AE36A7A}.Debug|x86.Build.0 = Debug|Any CPU
-		{A3950122-0AD2-423F-A151-1A7D6AE36A7A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A3950122-0AD2-423F-A151-1A7D6AE36A7A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A3950122-0AD2-423F-A151-1A7D6AE36A7A}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
