@@ -236,6 +236,8 @@
     <Compile Include="Settings_window.xaml.cs">
       <DependentUpon>Settings_window.xaml</DependentUpon>
     </Compile>
+    <Compile Include="SIPApp.cs" />
+    <Compile Include="SipTypes.cs" />
     <Compile Include="Status.cs" />
     <Compile Include="Status_Converter.cs" />
     <Compile Include="Style_Window.cs" />

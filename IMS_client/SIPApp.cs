@@ -12,22 +12,27 @@ namespace IMS_client
     public class SIPApp : SIPLib.SIPApp
     {
         public override SIPStack stack { get; set; }
+        public string username { get; set; }
+        public string realm { get; set; }
+        public string password { get; set; }
+
         private byte[] temp_buffer { get; set; }
+
         public override TransportInfo transport { get; set; }
+
         private UserAgent registerUA { get; set; }
+
         private UserAgent callUA { get; set; }
+
         public UserAgent messageUA { get; set; }
-        
+
         public event EventHandler<RawEventArgs> Raw_Recv_Event;
         public event EventHandler<RawEventArgs> Raw_Sent_Event;
-
         public event EventHandler<SipMessageEventArgs> Request_Recv_Event;
         public event EventHandler<SipMessageEventArgs> Response_Recv_Event;
-
+        public event EventHandler<SipMessageEventArgs> Sip_Sent_Event;
         public event EventHandler<StackErrorEventArgs> Error_Event;
-
         public event EventHandler<RegistrationChangedEventArgs> Reg_Event;
-
 
         private static ILog _log = LogManager.GetLogger(typeof(SIPApp));
 
@@ -66,7 +71,8 @@ namespace IMS_client
 
         public void ReceiveDataCB(IAsyncResult asyncResult)
         {
-            try {
+            try
+            {
                 IPEndPoint sender = new IPEndPoint(IPAddress.Any, 0);
                 EndPoint sendEP = (EndPoint)sender;
                 int bytesRead = transport.socket.EndReceiveFrom(asyncResult, ref sendEP);
@@ -100,7 +106,11 @@ namespace IMS_client
             stack.transport.socket.BeginSendTo(send_data, 0, send_data.Length, SocketFlags.None, destEP, new AsyncCallback(this.SendDataCB), destEP);
             if (this.Raw_Sent_Event != null)
             {
-                this.Raw_Sent_Event(this, new RawEventArgs(data,new string[] { remote_host, remote_port }));
+                this.Raw_Sent_Event(this, new RawEventArgs(data, new string[] { remote_host, remote_port }));
+            }
+            if (this.Sip_Sent_Event != null)
+            {
+                this.Sip_Sent_Event(this, new SipMessageEventArgs(new Message(data)));
             }
         }
 
@@ -161,10 +171,7 @@ namespace IMS_client
 
         public override string[] authenticate(UserAgent ua, Header header, SIPStack stack)
         {
-            string username = "alice";
-            string realm = "open-ims.test";
-            string password = "alice";
-            return new string[] { username + "@" + realm, password };
+            return new string[] { this.username + "@" + this.realm, this.password };
         }
 
         public override void receivedResponse(UserAgent ua, Message response, SIPStack stack)
@@ -172,33 +179,8 @@ namespace IMS_client
             _log.Info("Received response with code " + response.response_code + " " + response.response_text);
             _log.Debug("\n\n" + response.ToString());
             if (this.Response_Recv_Event != null)
-                {
-                    this.Response_Recv_Event(this, new SipMessageEventArgs(response));
-                }
-            switch (response.response_code)
             {
-                case 180:
-                    {
-
-                        break;
-                    }
-                case 200:
-                    {
-
-                        break;
-                    }
-                case 401:
-                    {
-                        _log.Error("Transaction layer did not handle registration - APP received  401");
-                        //UserAgent ua = new UserAgent(this.stack, null, false);
-                        //ua.authenticate(response, transaction);
-                        break;
-                    }
-                default:
-                    {
-                        _log.Info("Response code of " + response.response_code + " is unhandled ");
-                    }
-                    break;
+                this.Response_Recv_Event(this, new SipMessageEventArgs(response));
             }
         }
 
@@ -208,50 +190,10 @@ namespace IMS_client
             _log.Debug("\n\n" + request.ToString());
             if (this.Request_Recv_Event != null)
             {
-                    this.Request_Recv_Event(this, new SipMessageEventArgs(request));
+                this.Request_Recv_Event(this, new SipMessageEventArgs(request));
             }
-            switch (request.method.ToUpper())
-            {
-                case "INVITE":
-                    {
-                        _log.Info("Generating 200 OK response for INVITE");
-                        Message m = ua.createResponse(200, "OK");
-                        ua.sendResponse(m);
-                        break;
-                    }
-                case "CANCEL":
-                    {
-                        break;
-                    }
-                case "ACK":
-                    {
-                        break;
-                    }
-                case "BYE":
-                    {
-                        break;
-                    }
-                case "MESSAGE":
-                    {
-                        _log.Info("MESSAGE: " + request.body);
-                        //Address from = (Address) request.first("From").value;
-                        //this.Message(from.uri.ToString(), request.body);
-                        break;
-                    }
-                case "OPTIONS":
-                case "REFER":
-                case "SUBSCRIBE":
-                case "NOTIFY":
-                case "PUBLISH":
-                case "INFO":
-                default:
-                    {
-                        _log.Info("Request with method " + request.method.ToUpper() + " is unhandled");
-                        break;
-                    }
-            }
-        }
 
+        }
 
         public void timeout(Transaction transaction)
         {
@@ -263,7 +205,7 @@ namespace IMS_client
             throw new NotImplementedException();
         }
 
-        public void Message(string uri, string message)
+        public void SendIM(string uri, string message)
         {
             uri = checkURI(uri);
             if (isRegistered())
@@ -291,9 +233,9 @@ namespace IMS_client
                     }
                     catch (InvalidCastException E)
                     {
-                        _log.Error("Error ending current call, Dialog Does not Exist ?",E);
+                        _log.Error("Error ending current call, Dialog Does not Exist ?", E);
                     }
-                    
+
                 }
                 else
                 {
@@ -340,4 +282,24 @@ namespace IMS_client
                 return false;
             else return true;
         }
+
+        public void Register(string username, string password, string realm)
+        {
+            this.username = username;
+            this.password = password;
+            this.realm = realm;
+            this.registerUA = new UserAgent(this.stack, null, false);
+            Message register_msg = this.registerUA.createRegister(new SIPURI("sip:"+username+"@"+realm));
+            register_msg.insertHeader(new Header("3600", "Expires"));
+            this.registerUA.sendRequest(register_msg);
+        }
+
+        public void Register(string uri)
+        {
+            this.registerUA = new UserAgent(this.stack, null, false);
+            Message register_msg = this.registerUA.createRegister(new SIPURI(uri));
+            register_msg.insertHeader(new Header("3600", "Expires"));
+            this.registerUA.sendRequest(register_msg);
+        }
+    }
 }

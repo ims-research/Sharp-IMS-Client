@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Windows;
-using SipStack;
+using SIPLib;
 namespace IMS_client
 {
     public class IM_Handler
@@ -36,18 +36,18 @@ namespace IMS_client
         public event EventHandler<Message_Received_Args> Message_Recieved_Event;
         public event EventHandler<Typing_Message_Recieved_Args> Typing_Message_Recieved_Event;
 
-        ClientSipStack stack;
+        SIPApp app;
         Preferences settings;
 
-        public IM_Handler(ClientSipStack Stack, Preferences Settings)
+        public IM_Handler(SIPApp app, Preferences Settings)
         {
-            stack = Stack;
+            this.app = app;
             settings = Settings;
         }
 
         public void Send_Message(string sip_uri, string message)
         {
-            SipMessage request = new SipMessage();
+            Message request = new Message();
             request.set_request_line("MESSAGE", sip_uri);
             request.headers["From"] = SipUtilities.sip_tag(settings.ims_private_user_identity) + ";tag=" + SipUtilities.CreateTag();
             request.headers["To"] = SipUtilities.sip_tag(sip_uri.Replace("sip:", ""));
@@ -57,9 +57,9 @@ namespace IMS_client
             stack.SendMessage(request);
         }
 
-        public void Process_Message(SipMessage request)
+        public void Process_Message(Message request)
         {
-            SipMessage reply = stack.CreateResponse(SipResponseCodes.x200_Ok, request);
+            Message reply = stack.CreateResponse(SipResponseCodes.x200_Ok, request);
             stack.SendMessage(reply);
 
             if (request.headers["Content-Type"].ToUpper().Contains("TEXT/PLAIN"))
@@ -96,7 +96,7 @@ namespace IMS_client
 
         public void Send_Typing_Notice(string sip_uri)
         {
-            SipMessage request = new SipMessage();
+            Message request = new Message();
             request.set_request_line("MESSAGE", sip_uri);
             request.headers["From"] = SipUtilities.sip_tag(settings.ims_private_user_identity) + ";tag=" + SipUtilities.CreateTag();
             request.headers["To"] = SipUtilities.sip_tag(sip_uri.Replace("sip:", ""));

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Xml.Linq;
-using SipStack;
+using SIPLib;
 
 namespace IMS_client
 {
@@ -25,22 +25,22 @@ namespace IMS_client
             }
         }
 
-        ClientSipStack stack;
+        SIPApp app;
         Preferences settings;
 
         public event EventHandler<SipMessageEventArgs> Presence_Response_Event;
         public event EventHandler<PresenceChangedArgs> Presence_Changed_Event;
 
-        public Presence_Handler(ClientSipStack Stack, Preferences Settings)
+        public Presence_Handler(SIPApp app, Preferences Settings)
         {
-            stack = Stack;
+            this.app = app;
             settings = Settings;
         }
 
         public void Subscribe(string sip_uri)
         {
-            
-            SipMessage request = new SipMessage();
+
+            Message request = new Message();
             request.set_request_line("SUBSCRIBE", sip_uri);
             request.headers["Event"] = "presence";
             request.headers["CSeq"] = "1" + " SUBSCRIBE";
@@ -54,11 +54,11 @@ namespace IMS_client
 
          */
 
-        public void Process_Request(SipMessage request)
+        public void Process_Request(Message request)
         {
             if (request.method.ToUpper().Contains("NOTIFY"))
             {
-                SipMessage reply = stack.CreateResponse(SipResponseCodes.x200_Ok, request);
+                Message reply = stack.CreateResponse(SipResponseCodes.x200_Ok, request);
                 stack.SendMessage(reply);
                 if (request.headers.ContainsKey("Content-Length"))
                 {

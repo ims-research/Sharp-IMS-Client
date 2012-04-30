@@ -19,6 +19,8 @@ using System.Threading;
 using System.Text;
 using System.Text.RegularExpressions;
 using SIPLib;
+using log4net;
+using SIPLib.src.SIP;
 
 namespace IMS_client
 {
@@ -30,6 +32,7 @@ namespace IMS_client
         #region Global_Variables
 
         SIPStack sip_stack;
+        SIPApp app;
         Preferences settings;
         Address_Book address_book;
 
@@ -41,6 +44,7 @@ namespace IMS_client
         IM_Handler im_handler;
         Multimedia_Handler media_handler;
         Call_Handler call_handler;
+        private static ILog _log = LogManager.GetLogger(typeof(SIPApp));
 
         MediaPlayer sound_player = new MediaPlayer();
 
@@ -75,8 +79,9 @@ namespace IMS_client
         #endregion
 
         #region SIP_APP
+        #endregion
 
-        
+
 
         public Main_window()
         {
@@ -198,9 +203,8 @@ namespace IMS_client
             settings.ims_port = port;
 
             TransportInfo local_transport = createTransport(settings.ims_ip_address, port);
-            SIPApp app = new SIPApp(local_transport);
-
-            SIPStack sip_stack = new SIPStack(app);
+            app = new SIPApp(local_transport);
+            sip_stack = new SIPStack(app);
             
             // TODO
             //sip_stack.uri.user = "alice";
@@ -218,16 +222,16 @@ namespace IMS_client
 
         void stack_Sip_Sent_Event(object sender, SipMessageEventArgs e)
         {
-            if (SipUtilities.isRequest(e.message))
+            if (Utils.isRequest(e.message))
             {
 
                 Add_Sip_Request_Message_Handler message_handler = new Add_Sip_Request_Message_Handler(my_debug_window.Add_Sip_Request_Message);
-                Dispatcher.BeginInvoke(DispatcherPriority.Render, message_handler, e.message.method, e.message.print_message(true));
+                Dispatcher.BeginInvoke(DispatcherPriority.Render, message_handler, e.message.method, e.message.ToString());
             }
             else
             {
                 Add_Sip_Response_Message_Handler message_handler = new Add_Sip_Response_Message_Handler(my_debug_window.Add_Sip_Response_Message);
-                Dispatcher.BeginInvoke(DispatcherPriority.Render, message_handler, e.message.status_code.ToString(), e.message.print_message(true));
+                Dispatcher.BeginInvoke(DispatcherPriority.Render, message_handler, e.message.response_code, e.message.ToString());
 
             }
         }
@@ -239,12 +243,13 @@ namespace IMS_client
             Update_Status_Text(state);
             if (state.ToString() == "Registered")
             {
-                settings.ims_service_route = "";
-                string[] lines = Regex.Split(e.message.headers["Service-Route"], "\r\n");
-                foreach (string address in lines)
-                {
-                    settings.ims_service_route += address;
-                }
+                //TODO check this
+                //settings.ims_service_route = "";
+                //string[] lines = Regex.Split(e.message.headers["Service-Route"], "\r\n");
+                //foreach (string address in lines)
+                //{
+                //    settings.ims_service_route += address;
+                //}
 
                 if (settings.presence_enabled)
                 {
@@ -257,53 +262,83 @@ namespace IMS_client
         void stack_Response_Recv_Event(object sender, SipMessageEventArgs e)
         {
             Add_Sip_Response_Message_Handler message_handler = new Add_Sip_Response_Message_Handler(my_debug_window.Add_Sip_Response_Message);
-            Dispatcher.BeginInvoke(DispatcherPriority.Render, message_handler, e.message.status_code.ToString(), e.message.print_message(true));
+            Dispatcher.BeginInvoke(DispatcherPriority.Render, message_handler, e.message.response_code, e.message.ToString());
 
-            SipMessage response = e.message;
+            Message response = e.message;
+
+            switch (response.response_code)
+            {
+                case 180:
+                    {
+
+                        break;
+                    }
+                case 200:
+                    {
+
+                        break;
+                    }
+                case 401:
+                    {
+                        _log.Error("Transaction layer did not handle registration - APP received  401");
+                        //UserAgent ua = new UserAgent(this.stack, null, false);
+                        //ua.authenticate(response, transaction);
+                        break;
+                    }
+                default:
+                    {
+                        _log.Info("Response code of " + response.response_code + " is unhandled ");
+                    }
+                    break;
+            }
+
             if (response.status_code_type == StatusCodes.Informational)
             {
-                if (response.status_code == 100)
+                if (response.response_code == 100)
                 {
                     call_handler.SetState(CallState.Calling);
                 }
-                else if (response.status_code == 180)
+                else if (response.response_code == 180)
                 {
                     call_handler.SetState(CallState.Ringing);
                 }
-                else if (response.status_code == 182)
+                else if (response.response_code == 182)
                 {
                     call_handler.SetState(CallState.Queued);
                 }
             }
             else if (response.status_code_type == StatusCodes.Successful)
             {
-                if (response.headers["cseq"].ToUpper().Contains("REGISTER"))
-                {
-                    sip_stack.registration.latest_response = response;
-                    sip_stack.service_route = response.headers["Service-Route"];
-                    string temp = sip_stack.registration.latest_request.headers["contact"];
-                    if (temp.Contains("expires"))
-                    {
-                        
-                        int expires = int.Parse(temp.Substring(temp.IndexOf("expires=")+8));
-                        if (expires > 0)
-                        {
-                            sip_stack.registration.current_state = "Registered";
-                            stack_Reg_Event(this, new RegistrationChangedEventArgs("Registered", response));
-                        }
-                        else if (expires == 0)
-                        {
-                            sip_stack.registration.current_state = "Deregistered";
-                            stack_Reg_Event(this, new RegistrationChangedEventArgs("Deregistered", response));
-                       }
-
-                    }
+                //TODO Handle Register
+                //if (response.headers["cseq"].ToUpper().Contains("REGISTER"))
+                //{
                     
-                }
-                if (response.headers["cseq"].ToUpper().Contains("INVITE"))
-                {
-                    call_handler.process_Response(response);
-                }
+                    //sip_stack.registration.latest_response = response;
+                    //sip_stack.service_route = response.headers["Service-Route"];
+                    //string temp = sip_stack.registration.latest_request.headers["contact"];
+                    //if (temp.Contains("expires"))
+                    //{
+                        
+                    //    int expires = int.Parse(temp.Substring(temp.IndexOf("expires=")+8));
+                    //    if (expires > 0)
+                    //    {
+                    //        sip_stack.registration.current_state = "Registered";
+                    //        stack_Reg_Event(this, new RegistrationChangedEventArgs("Registered", response));
+                    //    }
+                    //    else if (expires == 0)
+                    //    {
+                    //        sip_stack.registration.current_state = "Deregistered";
+                    //        stack_Reg_Event(this, new RegistrationChangedEventArgs("Deregistered", response));
+                    //   }
+
+                    //}
+                    
+                //}
+                //TODO Handle INVITE
+                //if (response.headers["cseq"].ToUpper().Contains("INVITE"))
+                //{
+                //    call_handler.process_Response(response);
+                //}
             }
             else if (response.status_code_type == StatusCodes.Redirection)
             {
@@ -324,51 +359,78 @@ namespace IMS_client
             }
         }
 
-        void ProcessClientFailure(SipMessage response)
+        void ProcessClientFailure(Message response)
         {
-            if (response.status_code == 401)
-            {
-                sip_stack.registration.latest_response = response;
-                sip_stack.registration.auth_header = response.headers["WWW-Authenticate"];
-                string temp = sip_stack.registration.latest_request.headers["contact"];
-                string expires = temp.Substring(temp.IndexOf("expires=") + 8);
-                sip_stack.ReRegister(expires);
-            }
-            else if (response.status_code == 403)
-            {
-                sip_stack.registration.current_state = "Deregistered";
-                stack_Reg_Event(this, new RegistrationChangedEventArgs("Deregistered", response));   
-            }
+            //TODO handle client failure
+            //if (response.status_code == 401)
+            //{
+            //    sip_stack.registration.latest_response = response;
+            //    sip_stack.registration.auth_header = response.headers["WWW-Authenticate"];
+            //    string temp = sip_stack.registration.latest_request.headers["contact"];
+            //    string expires = temp.Substring(temp.IndexOf("expires=") + 8);
+            //    sip_stack.ReRegister(expires);
+            //}
+            //else if (response.status_code == 403)
+            //{
+            //    sip_stack.registration.current_state = "Deregistered";
+            //    stack_Reg_Event(this, new RegistrationChangedEventArgs("Deregistered", response));   
+            //}
         }
 
         void stack_Request_Recv_Event(object sender, SipMessageEventArgs e)
         {
             Add_Sip_Request_Message_Handler message_handler = new Add_Sip_Request_Message_Handler(my_debug_window.Add_Sip_Request_Message);
-            Dispatcher.BeginInvoke(DispatcherPriority.Render, message_handler, e.message.method, e.message.print_message(true));
-
-            SipMessage message = e.message;
-            if (message.request_line.ToUpper().Contains("INVITE"))
+            Dispatcher.BeginInvoke(DispatcherPriority.Render, message_handler, e.message.method, e.message);
+            Message request = e.message;
+            switch (request.method.ToUpper())
             {
-                Update_Status_Text("Incoming Call");
-                call_handler.SetState(CallState.Ringing);
-                call_handler.incoming_call = message;
+                case "INVITE":
+                    {
+                        _log.Info("Received INVITE message");
+                        Update_Status_Text("Incoming Call");
+                        call_handler.SetState(CallState.Ringing);
+                        call_handler.incoming_call = request;
+                        call_handler.ua = e.ua;
+                        break;
+                    }
+                case "CANCEL":
+                    {
+                        call_handler.Cancel_call(message);
+                        break;
+                    }
+                case "ACK":
+                    {
+                        break;
+                    }
+                case "BYE":
+                    {
+                        break;
+                    }
+                case "MESSAGE":
+                    {
+                        _log.Info("MESSAGE: " + request.body);
+                        im_handler.Process_Message(request);
+                        break;
+                    }
+                case "OPTIONS":
+                case "REFER":
+                case "SUBSCRIBE":
+                case "NOTIFY":
+                case "PUBLISH":
+                case "INFO":
+                default:
+                    {
+                        _log.Info("Request with method " + request.method.ToUpper() + " is unhandled");
+                        break;
+                    }
             }
-            else if (message.headers.ContainsKey("event"))
+            if (request.headers.ContainsKey("event"))
             {
-                if (message.headers["event"].Contains("presence"))
+                if (request.first("event").ToString().Contains("presence"))
                 {
-                    presence_handler.Process_Request(message);
+                    presence_handler.Process_Request(request);
                 }
             }
-            else if (message.request_line.ToUpper().Contains("MESSAGE"))
-            {
-                im_handler.Process_Message(message);
-            }
-            else if (message.request_line.ToUpper().Contains("CANCEL"))
-            {
-                call_handler.Cancel_call(message);
-            }
-
         }
 
         string get_local_ip()
@@ -417,16 +479,15 @@ namespace IMS_client
 
         private void Create_Presence_Handler()
         {
-            presence_handler = new Presence_Handler(sip_stack, settings);
+            presence_handler = new Presence_Handler(app, settings);
             presence_handler.Presence_Changed_Event += new EventHandler<Presence_Handler.PresenceChangedArgs>(presence_handler_Presence_Changed_Event);
         }
 
         private void Create_IM_Handler()
         {
-            im_handler = new IM_Handler(sip_stack, settings);
+            im_handler = new IM_Handler(app, settings);
             im_handler.Message_Recieved_Event += new EventHandler<IM_Handler.Message_Received_Args>(im_handler_Message_Recieved_Event);
             im_handler.Typing_Message_Recieved_Event += new EventHandler<IM_Handler.Typing_Message_Recieved_Args>(IM_Message_Status_Event);
-
         }
 
         private void Create_Media_Handler()
@@ -437,7 +498,7 @@ namespace IMS_client
 
         private void Create_Call_Handler()
         {
-            call_handler = new Call_Handler(sip_stack, settings, media_handler);
+            call_handler = new Call_Handler(app, settings, media_handler);
             call_handler.StateChanged += new EventHandler(call_handler_StateChanged);
         }
 
@@ -623,8 +684,6 @@ namespace IMS_client
             Dispatcher.BeginInvoke(DispatcherPriority.Render, message_handler, e);
         }
 
-
-
         void Gst_Message_Log_Event(object sender, GstMessageEventArgs e)
         {
             Add_Gst_Message_Handler message_handler = new Add_Gst_Message_Handler(my_debug_window.Add_Gst_Message);
@@ -655,19 +714,20 @@ namespace IMS_client
             my_im_window.Close();
             media_handler.video_window.Close();
             Save_Settings_to_Xml("Resources\\settings.xml", settings);
-            if (sip_stack.isRunning)
-            {
-                if (sip_stack.registration != null)
-                {
-                    sip_stack.Deregister();
+            //TODO Shut down SIP Stack / de register / publish offline etc.
+            //if (sip_stack.isRunning)
+            //{
+            //    if (sip_stack.registration != null)
+            //    {
+            //        sip_stack.Deregister();
                     
-                    if (settings.presence_enabled && presence_handler != null)
-                    {
-                        presence_handler.Publish(settings.ims_public_user_identity, "closed", "Offline", 3600);
-                    }
-                }
-                sip_stack.Stop();
-            }
+            //        if (settings.presence_enabled && presence_handler != null)
+            //        {
+            //            presence_handler.Publish(settings.ims_public_user_identity, "closed", "Offline", 3600);
+            //        }
+            //    }
+            //    sip_stack.Stop();
+            //}
         }
 
         void Settings_window_Closed(object sender, EventArgs e)
@@ -733,9 +793,7 @@ namespace IMS_client
 
         private void Register()
         {
-            string username = settings.ims_private_user_identity.Split('@')[0];
-            SipRegistration registration = new SipRegistration(username, settings.ims_password, settings.ims_realm, settings.ims_auth);
-            sip_stack.Register(registration.latest_request, registration, "3600");
+            this.app.Register(settings.ims_private_user_identity.Split('@')[0], settings.ims_password, settings.ims_realm);
         }
 
         private void Register_Click(object sender, RoutedEventArgs e)
@@ -745,20 +803,21 @@ namespace IMS_client
 
         private void Deregister_Click(object sender, RoutedEventArgs e)
         {
-            if (sip_stack.registration != null)
-            {
-                string current_state = sip_stack.registration.current_state;
-                if (current_state.ToUpper().Equals("REGISTERED") ||
-                    current_state.ToUpper().Equals("REGISTERING"))
-                {
-                    sip_stack.Deregister();
+            //TODO Handle Deregistration
+            //if (sip_stack.registration != null)
+            //{
+            //    string current_state = sip_stack.registration.current_state;
+            //    if (current_state.ToUpper().Equals("REGISTERED") ||
+            //        current_state.ToUpper().Equals("REGISTERING"))
+            //    {
+            //        sip_stack.Deregister();
 
-                    if (settings.presence_enabled)
-                    {
-                        presence_handler.Publish(settings.ims_public_user_identity, "closed", "Offline", 3600);
-                    }
-                }
-            }
+            //        if (settings.presence_enabled)
+            //        {
+            //            presence_handler.Publish(settings.ims_public_user_identity, "closed", "Offline", 3600);
+            //        }
+            //    }
+            //}
         }
 
         #endregion
@@ -1328,8 +1387,9 @@ namespace IMS_client
         #endregion
 
         #region General_Stack
-        void my_user_agent_IncomingCall(object sender, SipMessage message)
+        void my_user_agent_IncomingCall(object sender, Message message)
         {
+            //TODO handle incoming call
             //    if (!call_handler.in_call)
             //    {
             //        call_handler.incoming_call = e.Call;
@@ -1377,6 +1437,7 @@ namespace IMS_client
 
         private void Cancel_Call_Click(object sender, RoutedEventArgs e)
         {
+            //TODO Check Cancel Call
             sound_player.Dispatcher.Invoke(
                  System.Windows.Threading.DispatcherPriority.Normal,
                  new Action(

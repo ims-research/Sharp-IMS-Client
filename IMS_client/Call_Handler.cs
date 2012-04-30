@@ -3,16 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Windows;
-using SipStack;
+using SIPLib;
+using SIPLib.src.SIP;
 
 namespace IMS_client
 {
 
     class Call_Handler
     {
-
-        ClientSipStack stack;
         Preferences settings;
+        SIPApp app;
         public CallState call_state;
         Multimedia_Handler media_handler;
         int local_audio_port;
@@ -21,8 +21,10 @@ namespace IMS_client
         int remote_video_port;
         public bool in_call = false;
 
-        public SipMessage incoming_call = null;
-        private SipMessage outgoing_invite = null;
+        public UserAgent ua { get; set; }
+
+        public Message incoming_call = null;
+        private Message outgoing_invite = null;
 
         public event EventHandler StateChanged = null;
 
@@ -34,9 +36,9 @@ namespace IMS_client
             }
         }
 
-        public Call_Handler(ClientSipStack Stack, Preferences Settings, Multimedia_Handler Media_handler)
+        public Call_Handler(SIPApp app, Preferences Settings, Multimedia_Handler Media_handler)
         {
-            stack = Stack;
+            this.app = app;
             settings = Settings;
             media_handler = Media_handler;
         }
@@ -280,7 +282,7 @@ namespace IMS_client
             media_handler.Stop_Video_Tx();
         }
 
-        internal void Cancel_call(SipMessage e)
+        internal void Cancel_call(Message e)
         {
             if (in_call)
             {
