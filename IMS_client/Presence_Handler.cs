@@ -104,7 +104,7 @@ namespace IMS_client
 
         public void Publish(string sip_uri, string basic, string note,int expires)
         {
-            SipMessage request = new SipMessage();
+            Message request = new Message();
             request.set_request_line("PUBLISH", sip_uri);
             request.headers["Event"] = "presence";
             request.headers["P-Preferred-Identity"] = "<" + settings.ims_public_user_identity + ">";

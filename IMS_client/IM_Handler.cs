@@ -47,28 +47,29 @@ namespace IMS_client
 
         public void Send_Message(string sip_uri, string message)
         {
-            Message request = new Message();
-            request.set_request_line("MESSAGE", sip_uri);
-            request.headers["From"] = SipUtilities.sip_tag(settings.ims_private_user_identity) + ";tag=" + SipUtilities.CreateTag();
-            request.headers["To"] = SipUtilities.sip_tag(sip_uri.Replace("sip:", ""));
-            request.headers["CSeq"] = "5" + " MESSAGE";
-            request.headers["Content-Type"] = "text/plain";
-            request.message_body = message;
-            stack.SendMessage(request);
+            this.app.SendIM(sip_uri, message);
+            //TODO Check Sending of IMs
+            //Message request = new Message();
+            //request.set_request_line("MESSAGE", sip_uri);
+            //request.headers["From"] = SipUtilities.sip_tag(settings.ims_private_user_identity) + ";tag=" + SipUtilities.CreateTag();
+            //request.headers["To"] = SipUtilities.sip_tag(sip_uri.Replace("sip:", ""));
+            //request.headers["CSeq"] = "5" + " MESSAGE";
+            //request.headers["Content-Type"] = "text/plain";
+            //request.message_body = message;
+            //stack.SendMessage(request);
         }
 
         public void Process_Message(Message request)
         {
-            Message reply = stack.CreateResponse(SipResponseCodes.x200_Ok, request);
-            stack.SendMessage(reply);
+           
 
-            if (request.headers["Content-Type"].ToUpper().Contains("TEXT/PLAIN"))
+            if (request.first("Content-Type").ToString().ToUpper().Contains("TEXT/PLAIN"))
             {
                 try
                 {
                     if (this.Message_Recieved_Event != null)
                     {
-                        this.Message_Recieved_Event(this, new Message_Received_Args(SipUtilities.GetSipUri(request.headers["From"]), request.message_body));
+                        this.Message_Recieved_Event(this, new Message_Received_Args(request.first("From").value.ToString(), request.body));
                     }
                 }
                 catch (Exception exception)
@@ -76,13 +77,13 @@ namespace IMS_client
                     MessageBox.Show("Error in handling IM Message : " + exception.Message);
                 }
             }
-            else if (request.headers["Content-Type"].ToUpper().Equals("APPLICATION/IM-ISCOMPOSING+XML"))
+            else if (request.first("Content-Type").ToString().ToUpper().Equals("APPLICATION/IM-ISCOMPOSING+XML"))
             {
                 try
                 {
                     if (this.Typing_Message_Recieved_Event != null)
                     {
-                        this.Typing_Message_Recieved_Event(this, new Typing_Message_Recieved_Args(SipUtilities.GetSipUri(request.headers["From"]), request.message_body));
+                        this.Typing_Message_Recieved_Event(this, new Typing_Message_Recieved_Args(request.first("From").value.ToString(), request.body));
                     }
                 }
                 catch (Exception exception)
@@ -96,13 +97,6 @@ namespace IMS_client
 
         public void Send_Typing_Notice(string sip_uri)
         {
-            Message request = new Message();
-            request.set_request_line("MESSAGE", sip_uri);
-            request.headers["From"] = SipUtilities.sip_tag(settings.ims_private_user_identity) + ";tag=" + SipUtilities.CreateTag();
-            request.headers["To"] = SipUtilities.sip_tag(sip_uri.Replace("sip:", ""));
-            request.headers["CSeq"] = "5" + " MESSAGE";
-            request.headers["Content-Type"] = "application/im-iscomposing+xml";
-
             StringBuilder sb = new StringBuilder();
             sb.Append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
             sb.Append("<isComposing xmlns=\"urn:ietf:params:xml:ns:im-iscomposing\"\n");
@@ -111,10 +105,8 @@ namespace IMS_client
             sb.Append("<state>active</state>\n");
             sb.Append("<contenttype>text/plain</contenttype>\n");
             sb.Append("</isComposing>");
-
-            request.message_body = sb.ToString();
-
-            stack.SendMessage(request);
+            string message_body = sb.ToString();
+            this.app.SendIM(sip_uri, message_body,"application/im-iscomposing+xml");
         }
     }
 }

@@ -20,7 +20,7 @@ namespace IMS_client
 
         public override TransportInfo transport { get; set; }
 
-        private UserAgent registerUA { get; set; }
+        public  UserAgent registerUA { get; set; }
 
         private UserAgent callUA { get; set; }
 
@@ -190,7 +190,7 @@ namespace IMS_client
             _log.Debug("\n\n" + request.ToString());
             if (this.Request_Recv_Event != null)
             {
-                this.Request_Recv_Event(this, new SipMessageEventArgs(request));
+                this.Request_Recv_Event(this, new SipMessageEventArgs(request,ua));
             }
 
         }
@@ -205,7 +205,7 @@ namespace IMS_client
             throw new NotImplementedException();
         }
 
-        public void SendIM(string uri, string message)
+        public void SendIM(string uri, string message,string content_type = "text/plain")
         {
             uri = checkURI(uri);
             if (isRegistered())
@@ -214,7 +214,7 @@ namespace IMS_client
                 this.messageUA.localParty = this.registerUA.localParty;
                 this.messageUA.remoteParty = new Address(uri);
                 Message m = this.messageUA.createRequest("MESSAGE", message);
-                m.insertHeader(new Header("text/plain", "Content-Type"));
+                m.insertHeader(new Header("", "Content-Type"));
                 this.messageUA.sendRequest(m);
             }
         }
@@ -300,6 +300,58 @@ namespace IMS_client
             Message register_msg = this.registerUA.createRegister(new SIPURI(uri));
             register_msg.insertHeader(new Header("3600", "Expires"));
             this.registerUA.sendRequest(register_msg);
+        }
+
+        public void Invite(string uri)
+        {
+            uri = checkURI(uri);
+            if (isRegistered())
+            {
+                this.callUA = new UserAgent(this.stack, null, false);
+                this.callUA.localParty = this.registerUA.localParty;
+                this.callUA.remoteParty = new Address(uri);
+                Message invite = this.callUA.createRequest("INVITE");
+                this.callUA.sendRequest(invite);
+            }
+            else
+            {
+                _log.Error("isRegistered failed in invite message");
+            }
+        }
+
+        public  void Invite(string uri, SDP sdp)
+        {
+            uri = checkURI(uri);
+            if (isRegistered())
+            {
+                this.callUA = new UserAgent(this.stack, null, false);
+                this.callUA.localParty = this.registerUA.localParty;
+                this.callUA.remoteParty = new Address(uri);
+                Message invite = this.callUA.createRequest("INVITE");
+                invite.insertHeader(new Header("application/sdp", "Content-Type"));
+                invite.body = sdp.ToString();
+                this.callUA.sendRequest(invite);
+            }
+            else
+            {
+                _log.Error("isRegistered failed in invite message");
+            }
+        }
+
+        internal void acceptCall(SDP sdp)
+        {
+            Message response = this.callUA.createResponse(200, "OK");
+            response.insertHeader(new Header("application/sdp", "Content-Type"));
+            response.body = sdp.ToString();
+            this.callUA.sendResponse(response);
+        }
+
+        internal void stopCall(SDP sdp)
+        {
+            Message response = this.callUA.createResponse(200, "OK");
+            response.insertHeader(new Header("application/sdp", "Content-Type"));
+            response.body = sdp.ToString();
+            this.callUA.sendResponse(response);
         }
     }
 }

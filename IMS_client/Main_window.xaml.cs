@@ -410,6 +410,15 @@ namespace IMS_client
                     {
                         _log.Info("MESSAGE: " + request.body);
                         im_handler.Process_Message(request);
+
+                        if (this.app.messageUA == null)
+                        {
+                            this.app.messageUA = new UserAgent(this.sip_stack);
+                            this.app.messageUA.localParty = this.app.registerUA.localParty;
+                            this.app.messageUA.remoteParty = new Address(request.uri.ToString());
+                        }
+                        Message m = this.app.messageUA.createResponse(200, "OK");
+                        this.app.messageUA.sendResponse(m);
                         break;
                     }
                 case "OPTIONS":

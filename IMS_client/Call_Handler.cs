@@ -5,6 +5,7 @@ using System.Text;
 using System.Windows;
 using SIPLib;
 using SIPLib.src.SIP;
+using SIPLib.src;
 
 namespace IMS_client
 {
@@ -46,14 +47,12 @@ namespace IMS_client
         public void Start_Call(string to_uri, bool video_enabled, int local_audio_port, int local_video_port)
         {
             in_call = true;
-            SipMessage request = new SipMessage();
+            SDP sdp = new SDP(Generate_SDP(video_enabled, local_audio_port, local_video_port));
+            this.app.Invite(to_uri,sdp);
+        }
 
-            request.set_request_line("INVITE", to_uri);
-            request.headers["From"] = SipUtilities.sip_tag(settings.ims_private_user_identity) + ";tag=" + SipUtilities.CreateTag();
-            request.headers["To"] = SipUtilities.sip_tag(to_uri.Replace("sip:", ""));
-            request.headers["CSeq"] = "1" + " INVITE";
-            request.headers["Content-Type"] = "application/sdp";
-
+        private string Generate_SDP(bool video_enabled, int local_audio_port, int local_video_port)
+        {
             StringBuilder sb = new StringBuilder();
             sb.Append("v=0\n");
             sb.Append("o=- 0 0 IN IP4 " + settings.ims_ip_address + "\n");
@@ -74,75 +73,37 @@ namespace IMS_client
                 sb.Append("a=rtpmap:96 H263-1998 \n");
                 sb.Append("a=fmtp:96 profile-level-id=0 \n");
             }
-
-            request.message_body = sb.ToString();
-            outgoing_invite = request;
-            stack.SendMessage(request);
+            return sb.ToString();
         }
-
 
         public void Receive_Call()
         {
             if (!(in_call) && (incoming_call != null))
             {
-                string remote_sdp = "";
                 string remote_ip = "not_found";
                 bool video_enabled = false;
-                if (incoming_call.headers.ContainsKey("Content-Type") && incoming_call.headers["Content-Type"].ToLower().Contains("application/sdp"))
+                if (incoming_call.headers.ContainsKey("Content-Type") && incoming_call.first("Content-Type").ToString().ToLower().Contains("application/sdp"))
                 {
-                    remote_sdp = incoming_call.message_body;
-
-                    foreach (string line in remote_sdp.Split('\n'))
+                    SDP remote_sdp = new SDP(incoming_call.body);
+                    remote_ip = remote_sdp.Connection.address;
+                    foreach (SDPMedia media in remote_sdp.Media)
                     {
-                        if (line.ToLower().StartsWith("c="))
+                        if (media.ToString().ToLower().Contains("audio"))
                         {
-                            string[] c_line = line.Split();
-                            remote_ip = c_line[2];
+                            remote_audio_port = Int32.Parse(media.port);
                         }
-
-                        if (line.ToLower().StartsWith("m=audio"))
+                        else if (media.ToString().ToLower().Contains("video"))
                         {
-                            string[] m_audio_line = line.Split();
-                            remote_audio_port = Int32.Parse(m_audio_line[1]);
-                        }
-
-                        if (line.ToLower().StartsWith("m=video"))
-                        {
-                            string[] m_video_line = line.Split();
-                            remote_video_port = Int32.Parse(m_video_line[1]);
-                            video_enabled = true;
+                            remote_video_port = Int32.Parse(media.port);
                         }
                     }
                 }
 
-                in_call = true;
-                SipMessage reply = stack.CreateResponse(SipResponseCodes.x200_Ok, incoming_call);
-                reply.headers["Content-Type"] = "application/sdp";
+                SDP sdp = new SDP(Generate_SDP(video_enabled, local_audio_port, local_video_port));
+                this.app.acceptCall(sdp);
 
-
-                StringBuilder sb = new StringBuilder();
-                sb.Append("v=0\n");
-                sb.Append("o=- 0 0 IN IP4 " + settings.ims_ip_address + "\n");
-                sb.Append("s=IMS Call\n");
-                sb.Append("c=IN IP4 " + settings.ims_ip_address + "\n");
-                sb.Append("t=0 0\n");
-                sb.Append("m=audio " + settings.audiocall_local_port + " RTP/AVP 3 0 101\n");
-                sb.Append("b=AS:64\n");
-                sb.Append("a=rtpmap:3 GSM/8000\n");
-                sb.Append("a=rtpmap:0 PCMU/8000\n");
-                sb.Append("a=rtpmap:101 telephone-event/8000\n");
-                sb.Append("a=fmtp:101 0-11\n");
-                if (video_enabled)
-                {
-                    sb.Append("m=video " + settings.videocall_local_port + " RTP/AVP 96\n");
-                    sb.Append("b=AS:128\n");
-                    sb.Append("a=rtpmap:96 H263-1998\n");
-                    sb.Append("a=fmtp:96 profile-level-id=0\n");
-                }
-                reply.message_body = sb.ToString();
-                stack.SendMessage(reply);
                 in_call = true;
-                call_state = SipStack.CallState.Active;
+                call_state = CallState.Active;
 
                 media_handler.Start_Audio_Rx(settings.audiocall_local_port, 8);
                 media_handler.Start_Audio_Tx(remote_ip, remote_audio_port, 8);
@@ -150,16 +111,15 @@ namespace IMS_client
                 if (video_enabled)
                 {
                     media_handler.Start_Video_Tx(remote_ip, remote_video_port);
-                    media_handler.Start_Video_Rx(settings.videocall_local_port,SipUtilities.de_tag(SipUtilities.GetSipUri(incoming_call.headers["From"])));
+                    media_handler.Start_Video_Rx(settings.videocall_local_port, Utils.unquote(incoming_call.first("From").ToString()));
                 }
 
 
             }
         }
 
-        public void process_Response(SipMessage message)
+        public void process_Response(Message message)
         {
-            string remote_sdp;
             string remote_ip = "not_found";
 
             if (message.status_code_type == StatusCodes.Informational)
@@ -172,32 +132,25 @@ namespace IMS_client
                 if ((this.call_state == CallState.Ringing) || (this.call_state == CallState.Calling))
                 {
                     SetState(CallState.Active);
-                    SipMessage request = stack.CreateAck(outgoing_invite);
-                    stack.SendMessage(request);
+
+                    //TODO This should not be needed as the stack should create ACKs
+                    //Message request = stack.CreateAck(outgoing_invite);
+                    //stack.SendMessage(request);
 
                     bool video_enabled = false;
-                    if (message.headers.ContainsKey("Content-Type") && message.headers["Content-Type"].ToLower().Contains("application/sdp"))
+                    if (message.headers.ContainsKey("Content-Type") && message.first("Content-Type").ToString().ToLower().Contains("application/sdp"))
                     {
-                        remote_sdp = message.message_body;
-                        foreach (string line in remote_sdp.Split('\n'))
+                        SDP remote_sdp = new SDP(incoming_call.body);
+                        remote_ip = remote_sdp.Connection.address;
+                        foreach (SDPMedia media in remote_sdp.Media)
                         {
-                            if (line.ToLower().StartsWith("c="))
+                            if (media.ToString().ToLower().Contains("audio"))
                             {
-                                string[] c_line = line.Split();
-                                remote_ip = c_line[2];
+                                remote_audio_port = Int32.Parse(media.port);
                             }
-
-                            if (line.ToLower().StartsWith("m=audio"))
+                            else if (media.ToString().ToLower().Contains("video"))
                             {
-                                string[] m_audio_line = line.Split();
-                                remote_audio_port = Int32.Parse(m_audio_line[1]);
-                            }
-
-                            if (line.ToLower().StartsWith("m=video"))
-                            {
-                                string[] m_video_line = line.Split();
-                                remote_video_port = Int32.Parse(m_video_line[1]);
-                                video_enabled = true;
+                                remote_video_port = Int32.Parse(media.port);
                             }
                         }
                     }
@@ -206,7 +159,7 @@ namespace IMS_client
                     media_handler.Start_Audio_Tx(remote_ip, remote_audio_port, 8);
                     if (video_enabled)
                     {
-                        media_handler.Start_Video_Rx(settings.videocall_local_port,SipUtilities.de_tag(SipUtilities.GetSipUri(outgoing_invite.headers["To"])));
+                        media_handler.Start_Video_Rx(settings.videocall_local_port, Utils.unquote(outgoing_invite.first("To").ToString()));
                         media_handler.Start_Video_Tx(remote_ip, remote_video_port);
                     }
 
@@ -219,7 +172,7 @@ namespace IMS_client
             }
             else if (message.status_code_type == StatusCodes.GlobalFailure)
             {
-                if (message.status_code == 603)
+                if (message.response_code == 603)
                 {
                     SetState(CallState.Ending);
                     incoming_call = null;
@@ -229,13 +182,14 @@ namespace IMS_client
             }
         }
 
-        void cancel_ResponseReceived(object sender, SipMessage message)
+        void cancel_ResponseReceived(object sender, Message message)
         {
             if (message.status_code_type == StatusCodes.ClientFailure)
             {
                 SetState(CallState.Ended);
-                SipMessage request = stack.CreateAck(incoming_call);
-                stack.SendMessage(request);
+                //TODO Should not be needed here - stack should auto create acks
+                //Message request = stack.CreateAck(incoming_call);
+                //stack.SendMessage(request);
                 incoming_call = null;
                 outgoing_invite = null;
                 in_call = false;
@@ -251,31 +205,30 @@ namespace IMS_client
 
         internal void Stop_Call()
         {
-            
-            SetState(CallState.Ended);
-            string uri = "";
-            SipMessage temp = null;
-            if (incoming_call !=null)
-            {
-                temp = incoming_call;
-                uri = SipUtilities.de_tag(SipUtilities.GetSipUri(outgoing_invite.headers["From"]));
+            //TODO Check ending of call
+            //string uri = "";
+            //Message temp = null;
+            //if (incoming_call !=null)
+            //{
+            //    temp = incoming_call;
+            //    uri = Utils.unquote(outgoing_invite.first("From").ToString());
                
-            }
-            else if (outgoing_invite != null)
-            {
-                temp = outgoing_invite;
-                uri = SipUtilities.de_tag(SipUtilities.GetSipUri(outgoing_invite.request_line));
-            }
-            SipMessage request = new SipMessage();
-            request.set_request_line("BYE", uri);
-            request.headers["From"] = temp.headers["From"];
-            request.headers["To"] = temp.headers["To"];
-            request.headers["Call-ID"] = temp.headers["Call-ID"];
-            stack.SendMessage(request);
+            //}
+            //else if (outgoing_invite != null)
+            //{
+            //    temp = outgoing_invite;
+            //    uri = outgoing_invite.uri.ToString();
+            //}
+            //Message request = new Message(temp.ToString());
+            //request.method = "BYE";
+            //request.uri = new SIPURI(uri);
+            //this.ua.createRequest("BYE");
+            //this.app.endCurrentCall
+            SetState(CallState.Ended);
+            this.app.endCurrentCall();
             incoming_call = null;
             outgoing_invite = null;
             in_call = false;
-
             media_handler.Stop_Audio_Rx();
             media_handler.Stop_Audio_Tx();
             media_handler.Stop_Video_Rx();
