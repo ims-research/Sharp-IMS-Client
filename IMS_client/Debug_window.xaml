@@ -1,0 +1,74 @@
+﻿<Window x:Class="IMS_client.Debug_window"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:IMS_client"
+    Title="SIP Message Log" Height="300" Width="300"
+        Style="{StaticResource Window_Style}">
+    <TabControl>
+        <TabItem Header="Sip Messages">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"></ColumnDefinition>
+                    <ColumnDefinition Width="*"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <DockPanel Grid.Column="0"  Name="Debug_sip_msg_stackpanel">
+                    <Border VerticalAlignment="Stretch" DockPanel.Dock="Top">
+                        <TextBlock Background="Black" Padding="3" Foreground="White">SIP Messages</TextBlock>
+                    </Border>
+                    <ListBox  Name="Debug_sip_msg_listbox" SelectionChanged="Debug_sip_msg_listbox_SelectionChanged">
+                    </ListBox>
+                </DockPanel>
+                <TextBox TextWrapping="Wrap" Grid.Column="1" Background="Transparent" Name="Debug_sip_msg_textbox"></TextBox>
+            </Grid>
+        </TabItem>
+        <TabItem Header="Raw Data">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"></ColumnDefinition>
+                    <ColumnDefinition Width="*"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <DockPanel Grid.Column="0"  Name="Raw_msg_stackpanel">
+                    <Border VerticalAlignment="Stretch" DockPanel.Dock="Top">
+                        <TextBlock Background="Black" Padding="3" Foreground="White">Raw Messages</TextBlock>
+                    </Border>
+                    <ListBox  Name="Raw_msg_listbox" SelectionChanged="Raw_msg_listbox_SelectionChanged">
+                    </ListBox>
+                </DockPanel>
+                <TextBox TextWrapping="Wrap" Grid.Column="1" Background="Transparent" Name="Raw_msg_textbox"></TextBox>
+            </Grid>
+        </TabItem>
+        <TabItem Header="HTTP/XCAP Messages">
+            <Grid >
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"></ColumnDefinition>
+                    <ColumnDefinition Width="*"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <DockPanel Grid.Column="0"  Name="Debug_http_msg_stackpanel">
+                    <Border VerticalAlignment="Stretch" DockPanel.Dock="Top">
+                        <TextBlock Background="Black" Padding="3" Foreground="White">HTTP Messages</TextBlock>
+                    </Border>
+                    <ListBox  Name="Debug_http_msg_listbox" SelectionChanged="Debug_http_msg_listbox_SelectionChanged">
+
+                    </ListBox>
+                </DockPanel>
+                <TextBox Grid.Column="1" Background="Transparent" Name="Debug_http_msg_textbox"></TextBox>
+            </Grid>
+        </TabItem>
+        <TabItem Header="Gstreamer Messages">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"></ColumnDefinition>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <DockPanel Grid.Column="0"  Name="Debug_gst_msg_stackpanel">
+                <Border VerticalAlignment="Stretch" DockPanel.Dock="Top">
+                    <TextBlock Background="Black" Padding="3" Foreground="White">Gstreamer Messages</TextBlock>
+                </Border>
+                <ListBox  Name="Debug_gst_msg_listbox" SelectionChanged="Debug_gst_msg_listbox_SelectionChanged">
+                </ListBox>
+            </DockPanel>
+            <TextBox Grid.Column="1" Background="Transparent" Name="Debug_gst_msg_textbox"></TextBox>
+        </Grid>
+        </TabItem>
+    </TabControl>
+</Window>

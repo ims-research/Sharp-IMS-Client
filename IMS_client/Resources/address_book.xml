@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Address_Book xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<entries>
+		<Contact>
+			<Name>Alice Cooper</Name>
+			<Nickname>bad_boy753</Nickname>
+			<Sip_URI>sip:alice@open-ims.test</Sip_URI>
+			<Tel_URI>tel:+443@open-ims.test</Tel_URI>
+			<Email_Address>alice@gmail.com</Email_Address>
+			<Group>user</Group>
+		</Contact>
+		<Contact>
+			<Name>Bob Marley</Name>
+			<Nickname>chillax34</Nickname>
+			<Sip_URI>sip:bob@open-ims.test</Sip_URI>
+			<Tel_URI>tel:+2734@open-ims.test</Tel_URI>
+			<Email_Address>bob@gmail.com</Email_Address>
+			<Group>user</Group>
+		</Contact>
+		<Contact>
+			<Name>Justin Timberlake</Name>
+			<Nickname>just_ice48</Nickname>
+			<Sip_URI>sip:justin@open-ims.test</Sip_URI>
+			<Tel_URI>tel:3434334@open-ims.test</Tel_URI>
+			<Email_Address>justin@gmail.com</Email_Address>
+			<Group>user</Group>
+		</Contact>
+		<Contact>
+			<Name>Kelly Clarkson</Name>
+			<Nickname>KelleBelle</Nickname>
+			<Sip_URI>sip:kelly@open-ims.test</Sip_URI>
+			<Tel_URI>tel:35634@open-ims.test</Tel_URI>
+			<Email_Address>kelly@gmail.com</Email_Address>
+			<Group>user</Group>
+		</Contact>
+	</entries>
+</Address_Book>

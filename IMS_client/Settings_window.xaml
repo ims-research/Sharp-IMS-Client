@@ -1,0 +1,9 @@
+﻿<Window x:Class="IMS_client.Settings_window"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:IMS_client"
+    Title="Settings_window" Height="Auto" Width="Auto" MinHeight="300" MinWidth="300" 
+        Style="{StaticResource Window_Style}">
+    <TabControl Name="Options_tab_control" >
+    </TabControl>
+</Window>

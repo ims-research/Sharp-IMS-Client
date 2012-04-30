@@ -1,0 +1,19 @@
+﻿<Window x:Class="IMS_client.Video_Window"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:wf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"  
+    Title="Video_Window" Height="300" Width="300">
+    <StackPanel>
+        <StackPanel>
+            <Label HorizontalAlignment="Center" Name="local_video_label">Local Video</Label>
+    <WindowsFormsHost Height="100" Name="wfhost1" VerticalAlignment="Top">
+        <wf:Panel x:Name="video_tx_canvas"></wf:Panel>
+    </WindowsFormsHost></StackPanel>
+        <StackPanel>
+            <Label HorizontalAlignment="Center" Name="remote_video_label" >Remote Video</Label>
+                <WindowsFormsHost Height="100" Name="wfhost2" VerticalAlignment="Bottom">
+        <wf:Panel x:Name="video_rx_canvas"></wf:Panel>
+    </WindowsFormsHost>
+            </StackPanel>
+        </StackPanel>
+</Window>

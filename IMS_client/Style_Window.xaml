@@ -1,0 +1,123 @@
+﻿<ResourceDictionary
+  x:Class="IMS_client.Style_Window"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"  
+   xmlns:local="clr-namespace:IMS_client"
+    >
+
+    <LinearGradientBrush x:Key="TitleBarBackgroundBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientBrush.GradientStops>
+            <GradientStopCollection>
+                <GradientStop Color="#E7EBF7" Offset="0.0"/>
+                <GradientStop Color="#CEE3FF" Offset="0.5"/>
+                <GradientStop Color="#DEF7FF" Offset="1.0"/>
+            </GradientStopCollection>
+        </GradientBrush.GradientStops>
+    </LinearGradientBrush>
+
+    <Style TargetType="{x:Type Border}" x:Key = "MainBorder">
+        <Setter Property="Background" Value="#B5CBEF" />
+        <Setter Property="BorderBrush" Value="#395984" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="5" />
+        <Setter Property="Padding" Value="0" />
+    </Style>
+
+    <LinearGradientBrush x:Key="StatusBackgoundBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientBrush.GradientStops>
+            <GradientStopCollection>
+                <GradientStop Color="#D7E6F9 " Offset="0.0"/>
+                <GradientStop Color="#B6D1F5" Offset="0.5"/>
+                <GradientStop Color="#D7E5F7" Offset="1.0"/>
+            </GradientStopCollection>
+        </GradientBrush.GradientStops>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="GripAreadBackgroundBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientBrush.GradientStops>
+            <GradientStopCollection>
+                <GradientStop Color="#C6DFFF" Offset="0.0"/>
+                <GradientStop Color="#7396C6" Offset="1.0"/>
+            </GradientStopCollection>
+        </GradientBrush.GradientStops>
+    </LinearGradientBrush>
+
+    <SolidColorBrush x:Key="BorderBrush" Color="#6593CF" />
+    <SolidColorBrush x:Key="TabTextBrush" Color="#4971A3" />
+
+    <Style x:Key="CustomSeparatorStyle" TargetType="Border">
+        <Setter Property="BorderBrush" Value="#9AC6FF" />
+        <Setter Property="Background" Value="White" />
+        <Setter Property="Width" Value="2"/>
+        <Setter Property="Height" Value="16"/>
+    </Style>
+
+    <LinearGradientBrush x:Key="StatusItemBackgoundBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientBrush.GradientStops>
+            <GradientStopCollection>
+                <GradientStop Color="#C5DCF8 " Offset="0.0"/>
+                <GradientStop Color="#7495C2" Offset="1.0"/>
+            </GradientStopCollection>
+        </GradientBrush.GradientStops>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="ProgressBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientBrush.GradientStops>
+            <GradientStopCollection>
+                <GradientStop Color="#A4DF47 " Offset="0.0"/>
+                <GradientStop Color="#71AE1E" Offset="1.0"/>
+            </GradientStopCollection>
+        </GradientBrush.GradientStops>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="ProgressBackgroundBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientBrush.GradientStops>
+            <GradientStopCollection>
+                <GradientStop Color="#C6CBD5" Offset="0.0"/>
+                <GradientStop Color="#E0E4ED" Offset="1.0"/>
+            </GradientStopCollection>
+        </GradientBrush.GradientStops>
+    </LinearGradientBrush>
+
+    <Style x:Key="Window_Style" TargetType="{x:Type Window}">
+        <Setter Property="AllowsTransparency" Value="true" />
+        <Setter Property="WindowStyle" Value="None" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="ResizeMode" Value="CanResizeWithGrip" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Window}">
+                    <Grid>
+                        <Border Width="Auto" Height="Auto" Style="{StaticResource MainBorder}">
+                            <DockPanel   
+                  HorizontalAlignment="Stretch" Background="Transparent" VerticalAlignment="Stretch">
+                                <local:TitleBar DockPanel.Dock="Top" Title="{TemplateBinding Title}" Icon="{TemplateBinding Icon}" />
+                                <ContentPresenter />
+                            </DockPanel>
+                        </Border>
+
+                        <Line MouseDown="OnSizeNorth"  Name="lnSizeNorth" Stroke="Transparent"   
+              Cursor="SizeNS" X1="10" X2="{TemplateBinding ActualWidth}"
+              Y1="1" Y2="1" StrokeThickness="2"  />
+
+                        <Line MouseDown="OnSizeSouth" Name="lnSizeSouth" Stroke="Transparent" VerticalAlignment="Bottom" 
+                   Cursor="SizeNS" X1="1" X2="{TemplateBinding ActualWidth}" 
+                  Y1="{TemplateBinding ActualHeight}" Y2="{TemplateBinding ActualHeight}" StrokeThickness="2" />
+                        <Line MouseDown="OnSizeWest" Name="lnSizeWest" Stroke="Transparent"
+                  Cursor="SizeWE" X1="1" X2="1" Y1="1" Y2="{TemplateBinding ActualHeight}"  StrokeThickness="2" />
+                        <Line MouseDown="OnSizeEast" Name="lnSizeEast" Stroke="Transparent" HorizontalAlignment="Right" 
+                  Cursor="SizeWE" X1="{TemplateBinding ActualWidth}" 
+              X2="{TemplateBinding ActualWidth}" Y1="1" Y2="{TemplateBinding ActualHeight}"  StrokeThickness="2" />
+
+                        <Rectangle MouseDown="OnSizeNorthWest" Name="rectSizeNorthWest" Cursor="SizeNWSE" Fill="Transparent" Width="5" Height="5" VerticalAlignment="Top" HorizontalAlignment="Left" />
+                        <Rectangle MouseDown="OnSizeNorthEast" Name="rectSizeNorthEast" Cursor="SizeNESW" Fill="Transparent" Width="5" Height="5" VerticalAlignment="Top" HorizontalAlignment="Right" />
+                        <Rectangle MouseDown="OnSizeSouthWest" Name="rectSizeSouthWest" Cursor="SizeNESW" Fill="Transparent" Width="5" Height="5" VerticalAlignment="Bottom" HorizontalAlignment="Left" />
+                        <Rectangle MouseDown="OnSizeSouthEast" Name="rectSizeSouthEast" Cursor="SizeNWSE" Fill="Transparent" Width="5" Height="5" VerticalAlignment="Bottom" HorizontalAlignment="Right" />
+
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+
+        </Setter>
+    </Style>
+</ResourceDictionary>

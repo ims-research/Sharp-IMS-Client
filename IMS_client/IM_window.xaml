@@ -1,0 +1,10 @@
+﻿<Window x:Class="IMS_client.IM_window"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Instant Messaging" Height="300" Width="300"
+        Style="{StaticResource Window_Style}">
+    <Grid>
+        <TabControl Name="IM_TabControl">
+        </TabControl>
+    </Grid>
+</Window>

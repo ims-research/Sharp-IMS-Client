@@ -1,0 +1,32 @@
+﻿<Window x:Class="IMS_client.Address_Book_window"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:IMS_client"
+    Title="Network Stored Contact Address Book" MinHeight="300" MinWidth="600"
+    Style="{StaticResource Window_Style}">
+    <DockPanel>
+        <TabControl>
+            <TabItem Header="Add Contact">
+                <DockPanel>
+                    <Button DockPanel.Dock="Bottom" Click="Add_Contact_Click">Add Contact</Button>
+                    <Grid Name="Address_book_add_grid" DockPanel.Dock="Top" HorizontalAlignment="Center">
+                    </Grid>
+                </DockPanel>
+            </TabItem>
+            <TabItem Header="View Contact Details" IsSelected="True">
+                <DockPanel>
+                    <Border DockPanel.Dock="Bottom" BorderThickness="1" BorderBrush="LightGray">
+                    <DockPanel HorizontalAlignment="Stretch">
+                        <Label DockPanel.Dock="Left" Margin="2">Select Contact</Label>
+                        <Button DockPanel.Dock="Right" Margin="2" Click="Remove_Contact_Click">Delete Contact</Button>
+                        <ComboBox Margin="2" Name="Address_book_combobox" Width="Auto">
+                        </ComboBox>
+                    </DockPanel>
+                        </Border>
+        <Grid Name="Address_book_grid" DockPanel.Dock="Top" HorizontalAlignment="Center">
+        </Grid>
+            </DockPanel>
+        </TabItem>
+            </TabControl>
+    </DockPanel>
+</Window>

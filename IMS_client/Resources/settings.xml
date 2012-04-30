@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Preferences xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <ims_proxy_cscf_hostname>pcscf.open-ims.test</ims_proxy_cscf_hostname>
+  <ims_proxy_cscf_port>4060</ims_proxy_cscf_port>
+  <ims_realm>open-ims.test</ims_realm>
+  <ims_public_user_identity>sip:alice@open-ims.test</ims_public_user_identity>
+  <ims_private_user_identity>alice@open-ims.test</ims_private_user_identity>
+  <ims_password>alice</ims_password>
+  <ims_ip_address>192.168.0.5</ims_ip_address>
+  <ims_use_detected_ip>true</ims_use_detected_ip>
+  <ims_service_route>sip:orig@scscf.open-ims.test:6060;</ims_service_route>
+  <presence_enabled>true</presence_enabled>
+  <xdms_enabled>false</xdms_enabled>
+  <xdms_user_name>alice</xdms_user_name>
+  <xdms_password>alice</xdms_password>
+  <xdms_server_name>192.168.0.3</xdms_server_name>
+  <xdms_server_port>8000</xdms_server_port>
+  <videocall_height>240</videocall_height>
+  <videocall_width>320</videocall_width>
+  <videocall_fps>30</videocall_fps>
+  <videocall_local_port>20240</videocall_local_port>
+  <audiocall_local_port>6953</audiocall_local_port>
+</Preferences>
