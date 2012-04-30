@@ -54,10 +54,6 @@ namespace IMS_client
 
         public void Register(string uri)
         {
-            if (this.Reg_Event != null)
-            {
-                this.Reg_Event(this, new RegistrationChangedEventArgs("Registering", null));
-            }
             this.registerUA = new UserAgent(this.stack, null, false);
             Message register_msg = this.registerUA.createRegister(new SIPURI(uri));
             register_msg.insertHeader(new Header("3600", "Expires"));
