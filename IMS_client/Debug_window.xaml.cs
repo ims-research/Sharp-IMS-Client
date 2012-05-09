@@ -42,10 +42,10 @@ namespace IMS_client
             }
         }
 
-        public void Add_Sip_Response_Message(string status_code, string message)
+        public void Add_Sip_Response_Message(int status_code, string message)
         {
             ListBoxItem lbi = new ListBoxItem();
-            lbi.Content = status_code;
+            lbi.Content = status_code.ToString();
             lbi.Tag = message;
             lbi.ToolTip = message;
             Debug_sip_msg_listbox.Items.Add(lbi);

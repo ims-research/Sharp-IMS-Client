@@ -15,6 +15,7 @@ namespace IMS_client
         public string username { get; set; }
         public string realm { get; set; }
         public string password { get; set; }
+        public string regState { get; set; }
 
         private byte[] temp_buffer { get; set; }
 
@@ -28,6 +29,7 @@ namespace IMS_client
 
         public event EventHandler<RawEventArgs> Raw_Recv_Event;
         public event EventHandler<RawEventArgs> Raw_Sent_Event;
+        public override event EventHandler<RawEventArgs> Received_Data_Event;
         public event EventHandler<SipMessageEventArgs> Request_Recv_Event;
         public event EventHandler<SipMessageEventArgs> Response_Recv_Event;
         public event EventHandler<SipMessageEventArgs> Sip_Sent_Event;
@@ -72,6 +74,10 @@ namespace IMS_client
                 if (this.Raw_Recv_Event != null)
                 {
                     this.Raw_Recv_Event(this, new RawEventArgs(data, new string[] { remote_host, remote_port }));
+                }
+                if (this.Received_Data_Event != null)
+                {
+                    this.Received_Data_Event(this, new RawEventArgs(data, new string[] { remote_host, remote_port }));
                 }
                 this.transport.socket.BeginReceiveFrom(this.temp_buffer, 0, this.temp_buffer.Length, SocketFlags.None, ref sendEP, new AsyncCallback(this.ReceiveDataCB), sendEP);
             }

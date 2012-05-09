@@ -138,8 +138,8 @@ namespace IMS_client
 
         void stack_Raw_Recv_Event(object sender, RawEventArgs event_holder)
         {
-            Add_RAW_Message_Handler message_handler = new Add_RAW_Message_Handler(my_debug_window.Add_RAW_Message);
-            Dispatcher.BeginInvoke(DispatcherPriority.Render, message_handler, event_holder.data);
+           Add_RAW_Message_Handler message_handler = new Add_RAW_Message_Handler(my_debug_window.Add_RAW_Message);
+           Dispatcher.BeginInvoke(DispatcherPriority.Render, message_handler, event_holder.data);
         }
 
         private void Load_Address_Book()
@@ -208,8 +208,9 @@ namespace IMS_client
             
             // TODO
             //sip_stack.uri.user = "alice";
-            sip_stack.proxy_ip = settings.ims_proxy_cscf_hostname;
+            sip_stack.proxy_host = settings.ims_proxy_cscf_hostname;
             sip_stack.proxy_port = settings.ims_proxy_cscf_port;
+            
 
             app.Raw_Sent_Event += new EventHandler<RawEventArgs>(stack_Raw_Sent_Event);
             app.Raw_Recv_Event += new EventHandler<RawEventArgs>(stack_Raw_Recv_Event);
@@ -250,7 +251,6 @@ namespace IMS_client
                 //{
                 //    settings.ims_service_route += address;
                 //}
-
                 if (settings.presence_enabled)
                 {
                     presence_handler.Publish(settings.ims_public_user_identity, "open", "Available", 3600);
@@ -309,31 +309,24 @@ namespace IMS_client
             }
             else if (response.status_code_type == StatusCodes.Successful)
             {
-                //TODO Handle Register
-                //if (response.headers["cseq"].ToUpper().Contains("REGISTER"))
-                //{
-                    
-                    //sip_stack.registration.latest_response = response;
-                    //sip_stack.service_route = response.headers["Service-Route"];
-                    //string temp = sip_stack.registration.latest_request.headers["contact"];
-                    //if (temp.Contains("expires"))
-                    //{
-                        
-                    //    int expires = int.Parse(temp.Substring(temp.IndexOf("expires=")+8));
-                    //    if (expires > 0)
-                    //    {
-                    //        sip_stack.registration.current_state = "Registered";
-                    //        stack_Reg_Event(this, new RegistrationChangedEventArgs("Registered", response));
-                    //    }
-                    //    else if (expires == 0)
-                    //    {
-                    //        sip_stack.registration.current_state = "Deregistered";
-                    //        stack_Reg_Event(this, new RegistrationChangedEventArgs("Deregistered", response));
-                    //   }
-
-                    //}
-                    
-                //}
+                if (response.first("CSeq").ToString().ToUpper().Contains("REGISTER"))
+                {
+                    string temp = response.first("Contact").ToString();
+                    if (temp.Contains("expires"))
+                    {
+                        int expires = int.Parse(temp.Substring(temp.IndexOf("expires=")+8));
+                        if (expires > 0)
+                        {
+                            this.app.regState = "Registered";
+                            stack_Reg_Event(this, new RegistrationChangedEventArgs("Registered", response));
+                        }
+                        else if (expires == 0)
+                        {
+                            this.app.regState = "Deregistered";
+                            stack_Reg_Event(this, new RegistrationChangedEventArgs("Deregistered", response));
+                       }
+                    }
+                }
                 //TODO Handle INVITE
                 //if (response.headers["cseq"].ToUpper().Contains("INVITE"))
                 //{
@@ -342,6 +335,7 @@ namespace IMS_client
             }
             else if (response.status_code_type == StatusCodes.Redirection)
             {
+
             }
             else if (response.status_code_type == StatusCodes.ClientFailure)
             {
@@ -349,13 +343,15 @@ namespace IMS_client
             }
             else if (response.status_code_type == StatusCodes.ServerFailure)
             {
+
             }
             else if (response.status_code_type == StatusCodes.GlobalFailure)
             {
+
             }
             else if (response.status_code_type == StatusCodes.Unknown)
             {
-                MessageBox.Show("Unkown Status Code Type");
+                MessageBox.Show("Unkown Status Code Type received");
             }
         }
 
@@ -380,7 +376,7 @@ namespace IMS_client
         void stack_Request_Recv_Event(object sender, SipMessageEventArgs e)
         {
             Add_Sip_Request_Message_Handler message_handler = new Add_Sip_Request_Message_Handler(my_debug_window.Add_Sip_Request_Message);
-            Dispatcher.BeginInvoke(DispatcherPriority.Render, message_handler, e.message.method, e.message);
+            Dispatcher.BeginInvoke(DispatcherPriority.Render, message_handler, e.message.method, e.message.ToString());
             Message request = e.message;
             switch (request.method.ToUpper())
             {
@@ -710,7 +706,7 @@ namespace IMS_client
             Dispatcher.BeginInvoke(DispatcherPriority.Render, message_handler, e.type, e.message);
         }
 
-        delegate void Add_Sip_Response_Message_Handler(string Code, string message);
+        delegate void Add_Sip_Response_Message_Handler(int Code, string message);
         delegate void Add_Sip_Request_Message_Handler(string method, string message);
 
         delegate void Add_RAW_Message_Handler(string message);
