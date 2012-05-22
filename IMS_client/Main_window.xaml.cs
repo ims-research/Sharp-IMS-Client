@@ -1228,7 +1228,7 @@ namespace IMS_client
             }
         }
 
-        private void Settings_Click(object sender, RoutedEventArgs e)
+        private void SettingsClick(object sender, RoutedEventArgs e)
         {
             Settings_window my_settings_window = new Settings_window();
             my_settings_window.SizeToContent = SizeToContent.WidthAndHeight;

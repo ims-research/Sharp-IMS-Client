@@ -54,7 +54,7 @@
                     </MenuItem.Header>
                     </MenuItem>
                 </MenuItem>
-                <MenuItem BorderBrush="Black" Padding="15,2,15,2" Header="_Settings" ItemContainerStyle="{StaticResource MenuItemStyle}" Background="Black" Foreground="White" Click="Settings_Click"></MenuItem>
+                <MenuItem BorderBrush="Black" Padding="15,2,15,2" Header="_Settings" ItemContainerStyle="{StaticResource MenuItemStyle}" Background="Black" Foreground="White" Click="SettingsClick"></MenuItem>
                 <MenuItem BorderBrush="Black" Padding="15,2,15,2" Header="_Address Book" ItemContainerStyle="{StaticResource MenuItemStyle}" Background="Black" Foreground="White" Click="Address_Book_Menu_Click"></MenuItem>
             </Menu>
         </StackPanel>
