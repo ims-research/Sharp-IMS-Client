@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Windows.Documents;
+﻿using System.Windows.Documents;
 using System.Windows.Shapes;
 using System.Windows;
 using System.Windows.Media;
@@ -15,7 +11,7 @@ namespace IMS_client
         /// </summary>
         public class DragAdorner : Adorner
         {
-            private Rectangle _visual;
+            private readonly Rectangle _visual;
             private Point _location;
 
             /// <summary>
@@ -26,12 +22,14 @@ namespace IMS_client
                 : base(element)
             {
                 VisualBrush brush = new VisualBrush(element);
-                _visual = new Rectangle();
+                _visual = new Rectangle
+                              {
+                                  Width = element.RenderSize.Width,
+                                  Height = element.RenderSize.Height,
+                                  Fill = brush,
+                                  Opacity = 0.6
+                              };
 
-                _visual.Width = element.RenderSize.Width;
-                _visual.Height = element.RenderSize.Height;
-                _visual.Fill = brush;
-                _visual.Opacity = 0.6;
             }
 
             #region Method overrides
@@ -117,7 +115,7 @@ namespace IMS_client
             /// </summary>
             private void UpdateLocation()
             {
-                AdornerLayer layer = (AdornerLayer)this.Parent;
+                AdornerLayer layer = (AdornerLayer)Parent;
                 layer.Update(AdornedElement);
             }
 

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Xml.Serialization;
+﻿using System.Xml.Serialization;
 
 namespace IMS_client
 {
@@ -10,55 +6,55 @@ namespace IMS_client
     {
         public string Name { get; set; }
         public string Nickname { get; set; }
-        public string Sip_URI { get; set; }
-        public string Tel_URI { get; set; }
-        public string Email_Address { get; set; }
+        public string SipUri { get; set; }
+        public string TelUri { get; set; }
+        public string EmailAddress { get; set; }
         public string Group { get; set; }
 
         [XmlIgnore]
-        private Status _status { get; set; }
+        private Status Status { get; set; }
 
-        public Status Get_Status()
+        public Status GetStatus()
         {
-            return _status;
+            return Status;
             
         }
 
-        public void Set_Status(Status status)
+        public void SetStatus(Status status)
         {
-            _status.basic = status.basic;
-            _status.note = status.note;
-            _status.display_name = status.display_name;
+            Status.basic = status.basic;
+            Status.note = status.note;
+            Status.display_name = status.display_name;
         }
 
 
         public Contact()
         {
-            this.Name = "Enter_Name";
-            this.Nickname = "Enter_Nickname";
-            this.Sip_URI = "Enter_Sip_URI";
-            this.Tel_URI = "Enter_Tel_URI";
-            this.Email_Address = "Email_Address";
-            this.Group = "Enter_Group";
+            Name = "Enter_Name";
+            Nickname = "Enter_Nickname";
+            SipUri = "Enter_Sip_URI";
+            TelUri = "Enter_Tel_URI";
+            EmailAddress = "Email_Address";
+            Group = "Enter_Group";
 
-            _status = new Status();
+            Status = new Status();
         }
 
-        public Contact(Contact to_clone)
+        public Contact(Contact toClone)
         {
-            this.Name = to_clone.Name;
-            this.Nickname = to_clone.Nickname;
-            this.Sip_URI = to_clone.Sip_URI;
-            this.Tel_URI = to_clone.Tel_URI;
-            this.Email_Address = to_clone.Email_Address;
-            this.Group = to_clone.Group;
-            _status = new Status();
-            this.Set_Status(to_clone.Get_Status());
+            Name = toClone.Name;
+            Nickname = toClone.Nickname;
+            SipUri = toClone.SipUri;
+            TelUri = toClone.TelUri;
+            EmailAddress = toClone.EmailAddress;
+            Group = toClone.Group;
+            Status = new Status();
+            SetStatus(toClone.GetStatus());
         }
 
         public override string ToString()
         {
-            return this.Name;
+            return Name;
         }
     }
 }

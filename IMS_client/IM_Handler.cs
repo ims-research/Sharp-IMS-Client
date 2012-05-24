@@ -1,53 +1,50 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Windows;
-using SIPLib;
+using SIPLib.SIP;
+
 namespace IMS_client
 {
-    public class IM_Handler
+    public class IMHandler
     {
 
-        public class Message_Received_Args : EventArgs
+        public class MessageReceivedArgs : EventArgs
         {
-            public string contact;
-            public string message;
+            public string Contact;
+            public string Message;
 
-            public Message_Received_Args(string Contact, string Message)
+            public MessageReceivedArgs(string contact, string message)
             {
-                contact = Contact;
-                message = Message;
+                Contact = contact;
+                Message = message;
             }
         }
 
-        public class Typing_Message_Recieved_Args : EventArgs
+        public class TypingMessageRecievedArgs : EventArgs
         {
-            public string contact;
-            public string message;
+            public string Contact;
+            public string Message;
 
-            public Typing_Message_Recieved_Args(string Contact, string Message)
+            public TypingMessageRecievedArgs(string contact, string message)
             {
-                contact = Contact;
-                message = Message;
+                Contact = contact;
+                Message = message;
             }
         }
         
-        public event EventHandler<Message_Received_Args> Message_Recieved_Event;
-        public event EventHandler<Typing_Message_Recieved_Args> Typing_Message_Recieved_Event;
+        public event EventHandler<MessageReceivedArgs> MessageRecievedEvent;
+        public event EventHandler<TypingMessageRecievedArgs> TypingMessageRecievedEvent;
 
-        SIPApp app;
-        Preferences settings;
+        readonly SIPApp _app;
 
-        public IM_Handler(SIPApp app, Preferences Settings)
+        public IMHandler(SIPApp app)
         {
-            this.app = app;
-            settings = Settings;
+            _app = app;
         }
 
-        public void Send_Message(string sip_uri, string message)
+        public void SendMessage(string sipUri, string message)
         {
-            this.app.SendIM(sip_uri, message);
+            _app.SendIM(sipUri, message);
             //TODO Check Sending of IMs
             //Message request = new Message();
             //request.set_request_line("MESSAGE", sip_uri);
@@ -59,17 +56,15 @@ namespace IMS_client
             //stack.SendMessage(request);
         }
 
-        public void Process_Message(Message request)
+        public void ProcessMessage(Message request)
         {
-           
-
-            if (request.first("Content-Type").ToString().ToUpper().Contains("TEXT/PLAIN"))
+            if (request.First("Content-Type").ToString().ToUpper().Contains("TEXT/PLAIN"))
             {
                 try
                 {
-                    if (this.Message_Recieved_Event != null)
+                    if (MessageRecievedEvent != null)
                     {
-                        this.Message_Recieved_Event(this, new Message_Received_Args(request.first("From").value.ToString(), request.body));
+                        MessageRecievedEvent(this, new MessageReceivedArgs(request.First("From").Value.ToString(), request.Body));
                     }
                 }
                 catch (Exception exception)
@@ -77,13 +72,13 @@ namespace IMS_client
                     MessageBox.Show("Error in handling IM Message : " + exception.Message);
                 }
             }
-            else if (request.first("Content-Type").ToString().ToUpper().Equals("APPLICATION/IM-ISCOMPOSING+XML"))
+            else if (request.First("Content-Type").ToString().ToUpper().Equals("APPLICATION/IM-ISCOMPOSING+XML"))
             {
                 try
                 {
-                    if (this.Typing_Message_Recieved_Event != null)
+                    if (TypingMessageRecievedEvent != null)
                     {
-                        this.Typing_Message_Recieved_Event(this, new Typing_Message_Recieved_Args(request.first("From").value.ToString(), request.body));
+                        TypingMessageRecievedEvent(this, new TypingMessageRecievedArgs(request.First("From").Value.ToString(), request.Body));
                     }
                 }
                 catch (Exception exception)
@@ -95,7 +90,7 @@ namespace IMS_client
 
         }
 
-        public void Send_Typing_Notice(string sip_uri)
+        public void SendTypingNotice(string sipUri)
         {
             StringBuilder sb = new StringBuilder();
             sb.Append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
@@ -105,8 +100,8 @@ namespace IMS_client
             sb.Append("<state>active</state>\n");
             sb.Append("<contenttype>text/plain</contenttype>\n");
             sb.Append("</isComposing>");
-            string message_body = sb.ToString();
-            this.app.SendIM(sip_uri, message_body,"application/im-iscomposing+xml");
+            string messageBody = sb.ToString();
+            _app.SendIM(sipUri, messageBody,"application/im-iscomposing+xml");
         }
     }
 }

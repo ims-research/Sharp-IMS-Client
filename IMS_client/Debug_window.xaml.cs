@@ -1,15 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 using System.Net;
 
 namespace IMS_client
@@ -24,7 +16,7 @@ namespace IMS_client
             InitializeComponent();
         }
 
-        private void Debug_sip_msg_listbox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void DebugSIPMsgListboxSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             Debug_sip_msg_textbox.Clear();
             if (Debug_sip_msg_listbox.SelectedItem as ListBoxItem != null)
@@ -33,7 +25,7 @@ namespace IMS_client
             }
         }
 
-        private void Debug_http_msg_listbox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void DebugHttpMsgListboxSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             Debug_http_msg_textbox.Clear();
             if (Debug_http_msg_listbox.SelectedItem as ListBoxItem != null)
@@ -42,73 +34,55 @@ namespace IMS_client
             }
         }
 
-        public void Add_Sip_Response_Message(int status_code, string message)
+        public void AddSipResponseMessage(int statusCode, string message)
         {
-            ListBoxItem lbi = new ListBoxItem();
-            lbi.Content = status_code.ToString();
-            lbi.Tag = message;
-            lbi.ToolTip = message;
+            ListBoxItem lbi = new ListBoxItem {Content = statusCode.ToString(), Tag = message, ToolTip = message};
             Debug_sip_msg_listbox.Items.Add(lbi);
         }
 
-        public void Add_RAW_Message(string data)
+        public void AddRawMessage(string data)
         {
             if (data.Length > 0)
             {
                 int min = Math.Min(data.Length, 3);
-                ListBoxItem lbi = new ListBoxItem();
-                lbi.Content = data.Substring(0, min) + "...";
-                lbi.Tag = data;
-                lbi.ToolTip = data;
+                ListBoxItem lbi = new ListBoxItem {Content = data.Substring(0, min) + "...", Tag = data, ToolTip = data};
                 Raw_msg_listbox.Items.Add(lbi);
             }
         }
 
-        public void Add_Sip_Request_Message(string method, string message)
+        public void AddSipRequestMessage(string method, string message)
         {
-            ListBoxItem lbi = new ListBoxItem();
-            lbi.Content = method;
-            lbi.Tag = message;
-            lbi.ToolTip = message;
+            ListBoxItem lbi = new ListBoxItem {Content = method, Tag = message, ToolTip = message};
             Debug_sip_msg_listbox.Items.Add(lbi);
         }
 
-        public void Add_Http_Response_Message(HttpWebResponseEventArgs e)
+        public void AddHttpResponseMessage(HttpWebResponseEventArgs e)
         {
             HttpWebResponse response = e.response;
-            ListBoxItem lbi = new ListBoxItem();
-            lbi.Content = "Response";
+            ListBoxItem lbi = new ListBoxItem {Content = "Response"};
 
             string headers = "";
             headers += "Response to " + response.Method + " " + response.ResponseUri + "\n";
-            foreach (string key in response.Headers)
-            {
-                headers += key + ":" + response.Headers[key] + "\n";
-            }
+            headers = response.Headers.Cast<string>().Aggregate(headers, (current, key) => current + (key + ":" + response.Headers[key] + "\n"));
             lbi.Tag = headers + e.content;
             lbi.ToolTip = headers + e.content;
             Debug_http_msg_listbox.Items.Add(lbi);
         }
 
-        public void Add_Http_Request_Message(HttpRequestEventArgs e)
+        public void AddHttpRequestMessage(HttpRequestEventArgs e)
         {
             HttpWebRequest request = e.request;
             ListBoxItem lbi = new ListBoxItem();
             string headers = "";
-
             headers += request.Method + " " + request.RequestUri + "\n";
-
-            foreach (string key in request.Headers)
-            {
-                headers += key + ":" + request.Headers[key] + "\n";
-            }
+            headers = request.Headers.Cast<string>().Aggregate(headers, (current, key) => current + (key + ":" + request.Headers[key] + "\n"));
             lbi.Content = request.Method;
             lbi.Tag = headers + e.content;
             lbi.ToolTip = headers + e.content;
             Debug_http_msg_listbox.Items.Add(lbi);
         }
 
-        private void Debug_gst_msg_listbox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void DebugGstMsgListboxSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             Debug_gst_msg_textbox.Clear();
             if (Debug_gst_msg_listbox.SelectedItem as ListBoxItem != null)
@@ -117,16 +91,13 @@ namespace IMS_client
             }
         }
 
-        public void Add_Gst_Message(string type, string message)
+        public void AddGstMessage(string type, string message)
         {
-            ListBoxItem lbi = new ListBoxItem();
-            lbi.Content = type;
-            lbi.Tag = message;
-            lbi.ToolTip = message;
+            ListBoxItem lbi = new ListBoxItem {Content = type, Tag = message, ToolTip = message};
             Debug_gst_msg_listbox.Items.Add(lbi);
         }
 
-        private void Raw_msg_listbox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void RawMsgListboxSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             Raw_msg_textbox.Clear();
             if (Raw_msg_listbox.SelectedItem as ListBoxItem != null)

@@ -15,7 +15,7 @@
                     <Border VerticalAlignment="Stretch" DockPanel.Dock="Top">
                         <TextBlock Background="Black" Padding="3" Foreground="White">SIP Messages</TextBlock>
                     </Border>
-                    <ListBox  Name="Debug_sip_msg_listbox" SelectionChanged="Debug_sip_msg_listbox_SelectionChanged">
+                    <ListBox  Name="Debug_sip_msg_listbox" SelectionChanged="DebugSIPMsgListboxSelectionChanged">
                     </ListBox>
                 </DockPanel>
                 <TextBox TextWrapping="Wrap" Grid.Column="1" Background="Transparent" Name="Debug_sip_msg_textbox"></TextBox>
@@ -31,7 +31,7 @@
                     <Border VerticalAlignment="Stretch" DockPanel.Dock="Top">
                         <TextBlock Background="Black" Padding="3" Foreground="White">Raw Messages</TextBlock>
                     </Border>
-                    <ListBox  Name="Raw_msg_listbox" SelectionChanged="Raw_msg_listbox_SelectionChanged">
+                    <ListBox  Name="Raw_msg_listbox" SelectionChanged="RawMsgListboxSelectionChanged">
                     </ListBox>
                 </DockPanel>
                 <TextBox TextWrapping="Wrap" Grid.Column="1" Background="Transparent" Name="Raw_msg_textbox"></TextBox>
@@ -47,7 +47,7 @@
                     <Border VerticalAlignment="Stretch" DockPanel.Dock="Top">
                         <TextBlock Background="Black" Padding="3" Foreground="White">HTTP Messages</TextBlock>
                     </Border>
-                    <ListBox  Name="Debug_http_msg_listbox" SelectionChanged="Debug_http_msg_listbox_SelectionChanged">
+                    <ListBox  Name="Debug_http_msg_listbox" SelectionChanged="DebugHttpMsgListboxSelectionChanged">
 
                     </ListBox>
                 </DockPanel>
@@ -64,7 +64,7 @@
                 <Border VerticalAlignment="Stretch" DockPanel.Dock="Top">
                     <TextBlock Background="Black" Padding="3" Foreground="White">Gstreamer Messages</TextBlock>
                 </Border>
-                <ListBox  Name="Debug_gst_msg_listbox" SelectionChanged="Debug_gst_msg_listbox_SelectionChanged">
+                <ListBox  Name="Debug_gst_msg_listbox" SelectionChanged="DebugGstMsgListboxSelectionChanged">
                 </ListBox>
             </DockPanel>
             <TextBox Grid.Column="1" Background="Transparent" Name="Debug_gst_msg_textbox"></TextBox>

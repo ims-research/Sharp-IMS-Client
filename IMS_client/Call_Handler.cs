@@ -1,74 +1,72 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Windows;
-using SIPLib;
-using SIPLib.src.SIP;
-using SIPLib.src;
+using SIPLib.SIP;
+using SIPLib.utils;
 
 namespace IMS_client
 {
 
-    class Call_Handler
+    class CallHandler
     {
-        Preferences settings;
-        SIPApp app;
-        public CallState call_state;
-        Multimedia_Handler media_handler;
-        int local_audio_port;
-        int local_video_port;
-        int remote_audio_port;
-        int remote_video_port;
-        public bool in_call = false;
+        readonly Preferences _settings;
+        readonly SIPApp _app;
+        public CallState CallState;
+        readonly Multimedia_Handler _mediaHandler;
+        readonly int _localAudioPort;
+        readonly int _localVideoPort;
+        int _remoteAudioPort;
+        int _remoteVideoPort;
+        public bool InCall;
 
-        public UserAgent ua { get; set; }
+        public UserAgent UA { get; set; }
 
-        public Message incoming_call = null;
-        private Message outgoing_invite = null;
+        public Message IncomingCall;
+        private Message _outgoingInvite;
 
         public event EventHandler StateChanged = null;
 
         private void OnStateChanged(CallState state)
         {
-            if (this.StateChanged != null)
+            if (StateChanged != null)
             {
-                this.StateChanged(this, new EventArgs());
+                StateChanged(this, new EventArgs());
             }
         }
 
-        public Call_Handler(SIPApp app, Preferences Settings, Multimedia_Handler Media_handler)
+        public CallHandler(SIPApp app, Preferences settings, Multimedia_Handler mediaHandler, int localAudioPort, int localVideoPort)
         {
-            this.app = app;
-            settings = Settings;
-            media_handler = Media_handler;
+            _app = app;
+            _settings = settings;
+            _mediaHandler = mediaHandler;
+            _localAudioPort = localAudioPort;
+            _localVideoPort = localVideoPort;
         }
 
-        public void Start_Call(string to_uri, bool video_enabled, int local_audio_port, int local_video_port)
+        public void StartCall(string toUri, bool videoEnabled, int localAudioPort, int localVideoPort)
         {
-            in_call = true;
-            SDP sdp = new SDP(Generate_SDP(video_enabled, local_audio_port, local_video_port));
-            this.app.Invite(to_uri,sdp);
+            InCall = true;
+            SDP sdp = new SDP(GenerateSDP(videoEnabled, localAudioPort, localVideoPort));
+            _app.Invite(toUri,sdp);
         }
 
-        private string Generate_SDP(bool video_enabled, int local_audio_port, int local_video_port)
+        private string GenerateSDP(bool videoEnabled, int localAudioPort, int localVideoPort)
         {
             StringBuilder sb = new StringBuilder();
             sb.Append("v=0\n");
-            sb.Append("o=- 0 0 IN IP4 " + settings.ims_ip_address + "\n");
+            sb.Append("o=- 0 0 IN IP4 " + _settings.ims_ip_address + "\n");
             sb.Append("s=IMS Call\n");
-            sb.Append("c=IN IP4 " + settings.ims_ip_address + "\n");
+            sb.Append("c=IN IP4 " + _settings.ims_ip_address + "\n");
             sb.Append("t=0 0\n");
-            sb.Append("m=audio " + local_audio_port + " RTP/AVP 3 0 101\n");
+            sb.Append("m=audio " + localAudioPort + " RTP/AVP 3 0 101\n");
             sb.Append("b=AS:64\n");
             sb.Append("a=rtpmap:3 GSM/8000\n");
             sb.Append("a=rtpmap:0 PCMU/8000\n");
             sb.Append("a=rtpmap:101 telephone-event/8000\n");
             sb.Append("a=fmtp:101 0-11\n");
 
-            if (video_enabled)
+            if (videoEnabled)
             {
-                sb.Append("m=video " + local_video_port + " RTP/AVP 96 \n");
+                sb.Append("m=video " + localVideoPort + " RTP/AVP 96 \n");
                 sb.Append("b=AS:128 \n");
                 sb.Append("a=rtpmap:96 H263-1998 \n");
                 sb.Append("a=fmtp:96 profile-level-id=0 \n");
@@ -76,60 +74,61 @@ namespace IMS_client
             return sb.ToString();
         }
 
-        public void Receive_Call()
+        public void ReceiveCall()
         {
-            if (!(in_call) && (incoming_call != null))
+            if (!(InCall) && (IncomingCall != null))
             {
-                string remote_ip = "not_found";
-                bool video_enabled = false;
-                if (incoming_call.headers.ContainsKey("Content-Type") && incoming_call.first("Content-Type").ToString().ToLower().Contains("application/sdp"))
+                string remoteIP = "not_found";
+                bool videoEnabled = false;
+                if (IncomingCall.Headers.ContainsKey("Content-Type") && IncomingCall.First("Content-Type").ToString().ToLower().Contains("application/sdp"))
                 {
-                    SDP remote_sdp = new SDP(incoming_call.body);
-                    remote_ip = remote_sdp.Connection.address;
-                    foreach (SDPMedia media in remote_sdp.Media)
+                    SDP remoteSDP = new SDP(IncomingCall.Body);
+                    remoteIP = remoteSDP.Connection.Address;
+                    foreach (SDPMedia media in remoteSDP.Media)
                     {
                         if (media.ToString().ToLower().Contains("audio"))
                         {
-                            remote_audio_port = Int32.Parse(media.port);
+                            _remoteAudioPort = Int32.Parse(media.Port);
                         }
                         else if (media.ToString().ToLower().Contains("video"))
                         {
-                            remote_video_port = Int32.Parse(media.port);
+                            _remoteVideoPort = Int32.Parse(media.Port);
+                            videoEnabled = true;
                         }
                     }
                 }
 
-                SDP sdp = new SDP(Generate_SDP(video_enabled, local_audio_port, local_video_port));
-                this.app.acceptCall(sdp);
+                SDP sdp = new SDP(GenerateSDP(videoEnabled, _localAudioPort, _localVideoPort));
+                _app.acceptCall(sdp);
 
-                in_call = true;
-                call_state = CallState.Active;
+                InCall = true;
+                CallState = CallState.Active;
 
-                media_handler.Start_Audio_Rx(settings.audiocall_local_port, 8);
-                media_handler.Start_Audio_Tx(remote_ip, remote_audio_port, 8);
+                _mediaHandler.Start_Audio_Rx(_settings.audiocall_local_port, 8);
+                _mediaHandler.Start_Audio_Tx(remoteIP, _remoteAudioPort, 8);
 
-                if (video_enabled)
+                if (videoEnabled)
                 {
-                    media_handler.Start_Video_Tx(remote_ip, remote_video_port);
-                    media_handler.Start_Video_Rx(settings.videocall_local_port, Utils.unquote(incoming_call.first("From").ToString()));
+                    _mediaHandler.Start_Video_Tx(remoteIP, _remoteVideoPort);
+                    _mediaHandler.Start_Video_Rx(_settings.videocall_local_port, Utils.Unquote(IncomingCall.First("From").ToString()));
                 }
 
 
             }
         }
 
-        public void process_Response(Message message)
+        public void ProcessResponse(Message message)
         {
-            string remote_ip = "not_found";
+            string remoteIP = "not_found";
 
-            if (message.status_code_type == StatusCodes.Informational)
+            if (message.StatusCodeType == StatusCodes.Informational)
             {
                
             }
-            else if (message.status_code_type == StatusCodes.Successful)
+            else if (message.StatusCodeType == StatusCodes.Successful)
             {
 
-                if ((this.call_state == CallState.Ringing) || (this.call_state == CallState.Calling))
+                if ((CallState == CallState.Ringing) || (CallState == CallState.Calling))
                 {
                     SetState(CallState.Active);
 
@@ -137,73 +136,74 @@ namespace IMS_client
                     //Message request = stack.CreateAck(outgoing_invite);
                     //stack.SendMessage(request);
 
-                    bool video_enabled = false;
-                    if (message.headers.ContainsKey("Content-Type") && message.first("Content-Type").ToString().ToLower().Contains("application/sdp"))
+                    bool videoEnabled = false;
+                    if (message.Headers.ContainsKey("Content-Type") && message.First("Content-Type").ToString().ToLower().Contains("application/sdp"))
                     {
-                        SDP remote_sdp = new SDP(incoming_call.body);
-                        remote_ip = remote_sdp.Connection.address;
-                        foreach (SDPMedia media in remote_sdp.Media)
+                        SDP remoteSDP = new SDP(IncomingCall.Body);
+                        remoteIP = remoteSDP.Connection.Address;
+                        foreach (SDPMedia media in remoteSDP.Media)
                         {
                             if (media.ToString().ToLower().Contains("audio"))
                             {
-                                remote_audio_port = Int32.Parse(media.port);
+                                _remoteAudioPort = Int32.Parse(media.Port);
                             }
                             else if (media.ToString().ToLower().Contains("video"))
                             {
-                                remote_video_port = Int32.Parse(media.port);
+                                videoEnabled = true;
+                                _remoteVideoPort = Int32.Parse(media.Port);
                             }
                         }
                     }
 
-                    media_handler.Start_Audio_Rx(settings.audiocall_local_port, 8);
-                    media_handler.Start_Audio_Tx(remote_ip, remote_audio_port, 8);
-                    if (video_enabled)
+                    _mediaHandler.Start_Audio_Rx(_settings.audiocall_local_port, 8);
+                    _mediaHandler.Start_Audio_Tx(remoteIP, _remoteAudioPort, 8);
+                    if (videoEnabled)
                     {
-                        media_handler.Start_Video_Rx(settings.videocall_local_port, Utils.unquote(outgoing_invite.first("To").ToString()));
-                        media_handler.Start_Video_Tx(remote_ip, remote_video_port);
+                        _mediaHandler.Start_Video_Rx(_settings.videocall_local_port, Utils.Unquote(_outgoingInvite.First("To").ToString()));
+                        _mediaHandler.Start_Video_Tx(remoteIP, _remoteVideoPort);
                     }
 
                 }
-                else if (this.call_state == CallState.Ending)
+                else if (CallState == CallState.Ending)
                 {
                     SetState(CallState.Ended);
                 }
 
             }
-            else if (message.status_code_type == StatusCodes.GlobalFailure)
+            else if (message.StatusCodeType == StatusCodes.GlobalFailure)
             {
-                if (message.response_code == 603)
+                if (message.ResponseCode == 603)
                 {
                     SetState(CallState.Ending);
-                    incoming_call = null;
-                    outgoing_invite = null;
-                    in_call = false;
+                    IncomingCall = null;
+                    _outgoingInvite = null;
+                    InCall = false;
                 }
             }
         }
 
-        void cancel_ResponseReceived(object sender, Message message)
+        void CancelResponseReceived(object sender, Message message)
         {
-            if (message.status_code_type == StatusCodes.ClientFailure)
+            if (message.StatusCodeType == StatusCodes.ClientFailure)
             {
                 SetState(CallState.Ended);
                 //TODO Should not be needed here - stack should auto create acks
                 //Message request = stack.CreateAck(incoming_call);
                 //stack.SendMessage(request);
-                incoming_call = null;
-                outgoing_invite = null;
-                in_call = false;
+                IncomingCall = null;
+                _outgoingInvite = null;
+                InCall = false;
             }
         }
 
 
         public void SetState(CallState state)
         {
-            call_state = state;
+            CallState = state;
             OnStateChanged(state);
         }
 
-        internal void Stop_Call()
+        internal void StopCall()
         {
             //TODO Check ending of call
             //string uri = "";
@@ -225,23 +225,23 @@ namespace IMS_client
             //this.ua.createRequest("BYE");
             //this.app.endCurrentCall
             SetState(CallState.Ended);
-            this.app.endCurrentCall();
-            incoming_call = null;
-            outgoing_invite = null;
-            in_call = false;
-            media_handler.Stop_Audio_Rx();
-            media_handler.Stop_Audio_Tx();
-            media_handler.Stop_Video_Rx();
-            media_handler.Stop_Video_Tx();
+            _app.endCurrentCall();
+            IncomingCall = null;
+            _outgoingInvite = null;
+            InCall = false;
+            _mediaHandler.Stop_Audio_Rx();
+            _mediaHandler.Stop_Audio_Tx();
+            _mediaHandler.Stop_Video_Rx();
+            _mediaHandler.Stop_Video_Tx();
         }
 
-        internal void Cancel_call(Message e)
+        internal void CancelCall(Message e)
         {
-            if (in_call)
+            if (InCall)
             {
-                if (this.call_state == CallState.Active)
+                if (CallState == CallState.Active)
                 {
-                    Stop_Call();
+                    StopCall();
                 }
                 else
                 {
@@ -263,7 +263,7 @@ namespace IMS_client
             }
             else if (e != null)
             {
-                if (e.method.ToUpper().Equals("CANCEL"))
+                if (e.Method.ToUpper().Equals("CANCEL"))
                 {
                     SetState(CallState.Ended);
                     //SIP_Response response = stack.CreateResponse(SIP_ResponseCodes.x487_Request_Terminated, e.Request);

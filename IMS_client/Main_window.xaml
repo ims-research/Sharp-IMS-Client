@@ -8,38 +8,38 @@
         <StackPanel DockPanel.Dock="Top" Background="Black" Orientation="Horizontal" HorizontalAlignment="Stretch">
             <Menu Name="All_Menus" ItemContainerStyle="{StaticResource MenuItemStyle}" VerticalAlignment="Center" Background="Black">
                 <MenuItem BorderBrush="Black" Padding="15,2,15,2" Header="_Register" ItemContainerStyle="{StaticResource MenuItemStyle}" Background="Black" Foreground="White">
-                    <MenuItem Click="Register_Click">
+                    <MenuItem Click="RegisterClick">
                         <MenuItem.Header>
                             <TextBlock Text="Register (Settings)" Background="Transparent" Foreground="White">
                             </TextBlock>
                         </MenuItem.Header>
                     </MenuItem>
-                    <MenuItem Click="Deregister_Click">
+                    <MenuItem Click="DeregisterClick">
                         <MenuItem.Header>
                             <TextBlock Text="Deregister (Settings)" Background="Transparent" Foreground="White">
                             </TextBlock>
                         </MenuItem.Header>
                     </MenuItem>
                     
-                    <MenuItem Tag="alice@open-ims.test" Click="reg_known_user_Click">
+                    <MenuItem Tag="alice@open-ims.test" Click="RegKnownUserClick">
                         <MenuItem.Header>
                             <TextBlock Text="As Alice" Background="Transparent" Foreground="White">
                             </TextBlock>
                         </MenuItem.Header>
                     </MenuItem>
-                    <MenuItem Tag="bob@open-ims.test" Click="reg_known_user_Click">
+                    <MenuItem Tag="bob@open-ims.test" Click="RegKnownUserClick">
                         <MenuItem.Header>
                             <TextBlock Text="As Bob" Background="Transparent" Foreground="White">
                             </TextBlock>
                         </MenuItem.Header>
                     </MenuItem>
-                    <MenuItem Tag="justin@open-ims.test" Click="reg_known_user_Click">
+                    <MenuItem Tag="justin@open-ims.test" Click="RegKnownUserClick">
                         <MenuItem.Header>
                             <TextBlock Text="As Justin" Background="Transparent" Foreground="White">
                             </TextBlock>
                         </MenuItem.Header>
                     </MenuItem>
-                    <MenuItem Tag="kelly@open-ims.test" Click="reg_known_user_Click">
+                    <MenuItem Tag="kelly@open-ims.test" Click="RegKnownUserClick">
                             <MenuItem.Header>
                                 <TextBlock Text="As Kelly" Background="Transparent" Foreground="White">
                             </TextBlock>
@@ -47,7 +47,7 @@
                         </MenuItem>
                     </MenuItem>
                 <MenuItem BorderBrush="Black" Padding="15,2,15,2" Header="_Debug Options" ItemContainerStyle="{StaticResource MenuItemStyle}" Background="Black" Foreground="White">
-                    <MenuItem Name="Show_Debug_Log_MenuItem" IsCheckable="True" Checked="Show_Debug_Log_Checked" Unchecked="Show_Debug_Log_Unchecked">
+                    <MenuItem Name="Show_Debug_Log_MenuItem" IsCheckable="True" Checked="ShowDebugLogChecked" Unchecked="ShowDebugLogUnchecked">
                     <MenuItem.Header>
                             <TextBlock Text="Show Debug Log" Background="Transparent" Foreground="White" TextAlignment="Center">
                            </TextBlock>
@@ -55,7 +55,7 @@
                     </MenuItem>
                 </MenuItem>
                 <MenuItem BorderBrush="Black" Padding="15,2,15,2" Header="_Settings" ItemContainerStyle="{StaticResource MenuItemStyle}" Background="Black" Foreground="White" Click="SettingsClick"></MenuItem>
-                <MenuItem BorderBrush="Black" Padding="15,2,15,2" Header="_Address Book" ItemContainerStyle="{StaticResource MenuItemStyle}" Background="Black" Foreground="White" Click="Address_Book_Menu_Click"></MenuItem>
+                <MenuItem BorderBrush="Black" Padding="15,2,15,2" Header="_Address Book" ItemContainerStyle="{StaticResource MenuItemStyle}" Background="Black" Foreground="White" Click="AddressBookMenuClick"></MenuItem>
             </Menu>
         </StackPanel>
         <StatusBar Name="Status_Bar" Height="20" DockPanel.Dock="Bottom">
@@ -70,15 +70,15 @@
                 <StackPanel>
                     <StackPanel Orientation="Horizontal">
                     <Border BorderThickness="1" CornerRadius="10" Margin="1">
-                        <Button Background="Transparent"  BorderBrush="Transparent" Margin="1" Click="Answer_Call_Click">
+                        <Button Background="Transparent"  BorderBrush="Transparent" Margin="1" Click="AnswerCallClick">
                             <StackPanel Orientation="Horizontal">
                                     <Label VerticalContentAlignment="Center">Answer / Call</Label>
-                                    <Image Source="/IMS_client;component/Resources/Button_Images/check.png" Height="30" ImageFailed="Image_ImageFailed"></Image>
+                                    <Image Source="/IMS_client;component/Resources/Button_Images/check.png" Height="30" ImageFailed="ImageImageFailed"></Image>
                                 </StackPanel>
                         </Button>
                     </Border>
                     <Border BorderThickness="1" CornerRadius="10" Margin="1">
-                        <Button Background="Transparent"  BorderBrush="Transparent" Margin="1" Click="Cancel_Call_Click">
+                        <Button Background="Transparent"  BorderBrush="Transparent" Margin="1" Click="CancelCallClick">
                             <StackPanel Orientation="Horizontal">
                                     <Label VerticalContentAlignment="Center">Cancel Call</Label>
                                     <Image Source="/IMS_client;component/Resources/Button_Images/cancel.png" Height="30"></Image>

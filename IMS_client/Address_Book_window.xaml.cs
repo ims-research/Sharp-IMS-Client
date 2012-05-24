@@ -1,15 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 using System.Reflection;
 
 namespace IMS_client
@@ -17,81 +11,74 @@ namespace IMS_client
     /// <summary>
     /// Interaction logic for Address_Book_window.xaml
     /// </summary>
-    public partial class Address_Book_window : Window
+    public partial class AddressBookWindow : Window
     {
-        Address_Book address_book;
+        AddressBook _addressBook;
         Contact new_contact;
 
-        public Address_Book_window(Address_Book passed_in_address_book)
+        public AddressBookWindow(AddressBook passedInAddressBook)
         {
             InitializeComponent();
-            this.new_contact = new Contact();
-            this.address_book = passed_in_address_book;
-            this.SizeToContent = SizeToContent.WidthAndHeight;
-            PropertyInfo[] properties = null;
-            properties = typeof(Contact).GetProperties();
+            new_contact = new Contact();
+            _addressBook = passedInAddressBook;
+            SizeToContent = SizeToContent.WidthAndHeight;
+            PropertyInfo[] properties = typeof(Contact).GetProperties();
 
-            Create_Add_Contact_Tab(properties);
-            if (address_book != null)
+            CreateAddContactTab(properties);
+            if (_addressBook != null)
             {
-                Create_Display_Contact_Tab(properties);
+                CreateDisplayContactTab(properties);
             }
         }
 
-        private void Create_Add_Contact_Tab(PropertyInfo[] properties)
+        private void CreateAddContactTab(IEnumerable<PropertyInfo> properties)
         {
-            Grid add_grid = this.Address_book_add_grid;
+            Grid addGrid = Address_book_add_grid;
             ColumnDefinition coldef = new ColumnDefinition();
-            add_grid.ColumnDefinitions.Add(coldef);
+            addGrid.ColumnDefinitions.Add(coldef);
             coldef = new ColumnDefinition();
-            add_grid.ColumnDefinitions.Add(coldef);
+            addGrid.ColumnDefinitions.Add(coldef);
 
             int counter = 0;
-            foreach (PropertyInfo prop_info in properties)
+            foreach (PropertyInfo propInfo in properties)
             {
-                Create_Lbl_Txt_Row(new_contact, counter, ref add_grid, prop_info.Name);
+                Create_Lbl_Txt_Row(new_contact, counter, ref addGrid, propInfo.Name);
                 counter++;
             }
         }
 
-        private void Create_Display_Contact_Tab(PropertyInfo[] properties)
+        private void CreateDisplayContactTab(IEnumerable<PropertyInfo> properties)
         {
-            ComboBox contact_list_box = this.Address_book_combobox;
-            contact_list_box.ItemsSource = address_book.entries;
+            ComboBox contactListBox = Address_book_combobox;
+            contactListBox.ItemsSource = _addressBook.Entries;
 
-            Grid contact_info_grid = this.Address_book_grid;
+            Grid contactInfoGrid = Address_book_grid;
             ColumnDefinition coldef = new ColumnDefinition();
-            contact_info_grid.ColumnDefinitions.Add(coldef);
+            contactInfoGrid.ColumnDefinitions.Add(coldef);
             coldef.Width = GridLength.Auto;
-            coldef = new ColumnDefinition();
-            coldef.Width = GridLength.Auto;
-            contact_info_grid.ColumnDefinitions.Add(coldef);
+            coldef = new ColumnDefinition {Width = GridLength.Auto};
+            contactInfoGrid.ColumnDefinitions.Add(coldef);
 
             int counter = 0;
-            foreach (PropertyInfo prop_info in properties)
+            foreach (PropertyInfo propInfo in properties)
             {
-                Create_Lbl_Txt_Row(address_book.entries[0], counter, ref contact_info_grid, prop_info.Name);
+                Create_Lbl_Txt_Row(_addressBook.Entries[0], counter, ref contactInfoGrid, propInfo.Name);
                 counter++;
             }
-            contact_list_box.IsTextSearchEnabled = true;
-            contact_list_box.SelectionChanged += new SelectionChangedEventHandler(contact_list_box_SelectionChanged);
+            contactListBox.IsTextSearchEnabled = true;
+            contactListBox.SelectionChanged += ContactListBoxSelectionChanged;
 
         }
 
-        private void Create_Lbl_Txt_Row(Contact binding_source, int row_number, ref Grid grid_to_add_to, string prop_info_name)
+        private void Create_Lbl_Txt_Row(Contact bindingSource, int rowNumber, ref Grid gridToAddTo, string propInfoName)
         {
             RowDefinition rowdef = new RowDefinition();
-            grid_to_add_to.RowDefinitions.Add(rowdef);
+            gridToAddTo.RowDefinitions.Add(rowdef);
 
-            TextBox textbox = new TextBox();
-            textbox.Tag = prop_info_name;
-            textbox.MaxHeight = 30; 
-            textbox.MaxWidth = 200;
-            textbox.MinWidth = 100;
-            Binding myBinding = null;
-            myBinding = new Binding("WidthProperty");
-            myBinding.Source = grid_to_add_to.ColumnDefinitions[1].Width;
-            textbox.SetBinding(TextBox.WidthProperty,myBinding);
+            TextBox textbox = new TextBox {Tag = propInfoName, MaxHeight = 30, MaxWidth = 200, MinWidth = 100};
+
+            Binding myBinding = new Binding("WidthProperty") {Source = gridToAddTo.ColumnDefinitions[1].Width};
+            textbox.SetBinding(WidthProperty,myBinding);
 
             textbox.HorizontalContentAlignment = HorizontalAlignment.Center;
             textbox.HorizontalAlignment = HorizontalAlignment.Stretch;
@@ -99,51 +86,51 @@ namespace IMS_client
             textbox.VerticalAlignment = VerticalAlignment.Stretch;
             textbox.Margin = new Thickness(2);
 
-            
-            myBinding = new Binding(prop_info_name);
-            myBinding.Source = binding_source;
+
+            myBinding = new Binding(propInfoName) {Source = bindingSource};
             textbox.SetBinding(TextBox.TextProperty, myBinding);
 
 
-            TextBlock name = new TextBlock();
-            name.Text = prop_info_name;
-            name.Margin = new Thickness(2);
-            name.HorizontalAlignment = HorizontalAlignment.Right;
-            name.VerticalAlignment = VerticalAlignment.Center;
+            TextBlock name = new TextBlock
+                                 {
+                                     Text = propInfoName,
+                                     Margin = new Thickness(2),
+                                     HorizontalAlignment = HorizontalAlignment.Right,
+                                     VerticalAlignment = VerticalAlignment.Center
+                                 };
 
-            grid_to_add_to.Children.Add(textbox);
-            grid_to_add_to.Children.Add(name);
+            gridToAddTo.Children.Add(textbox);
+            gridToAddTo.Children.Add(name);
 
             Grid.SetColumn(textbox, 1);
-            Grid.SetRow(textbox, row_number);
+            Grid.SetRow(textbox, rowNumber);
 
             Grid.SetColumn(name, 0);
-            Grid.SetRow(name, row_number);
+            Grid.SetRow(name, rowNumber);
         }
 
-        private void contact_list_box_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void ContactListBoxSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            ComboBox combo_box = sender as ComboBox;
-            Address_Book_window my_address_book_window = TryFindParent<Address_Book_window>(combo_box);
-            Grid contact_info_grid = my_address_book_window.Address_book_grid;
+            ComboBox comboBox = sender as ComboBox;
+            AddressBookWindow myAddressBookWindow = TryFindParent<AddressBookWindow>(comboBox);
+            Grid contactInfoGrid = myAddressBookWindow.Address_book_grid;
             int index = 0;
 
-            if (combo_box.SelectedItem != null)
+            if (comboBox != null && comboBox.SelectedItem != null)
             {
-                foreach (Contact contact in address_book.entries)
+                foreach (Contact contact in _addressBook.Entries)
                 {
-                    if (contact.Name == combo_box.SelectedItem.ToString())
+                    if (contact.Name == comboBox.SelectedItem.ToString())
                     {
-                        index = address_book.entries.IndexOf(contact);
+                        index = _addressBook.Entries.IndexOf(contact);
                     }
 
                 }
 
-                foreach (TextBox text_box in contact_info_grid.Children.OfType<TextBox>())
+                foreach (TextBox textBox in contactInfoGrid.Children.OfType<TextBox>())
                 {
-                    Binding myBinding = new Binding(text_box.Tag.ToString());
-                    myBinding.Source = address_book.entries[index];
-                    text_box.SetBinding(TextBox.TextProperty, myBinding);
+                    Binding myBinding = new Binding(textBox.Tag.ToString()) {Source = _addressBook.Entries[index]};
+                    textBox.SetBinding(TextBox.TextProperty, myBinding);
                 }
             }
         }
@@ -162,24 +149,21 @@ namespace IMS_client
             {
                 return parent;
             }
-            else
-            {
-                //use recursion to proceed with next level
-                return TryFindParent<T>(parentObject);
-            }
+            //use recursion to proceed with next level
+            return TryFindParent<T>(parentObject);
         }
 
-        private void Add_Contact_Click(object sender, RoutedEventArgs e)
+        private void AddContactClick(object sender, RoutedEventArgs e)
         {
-            if (address_book == null)
+            if (_addressBook == null)
             {
-                address_book = new Address_Book();
+                _addressBook = new AddressBook();
             }
             if (new_contact.Name != "")
             {
-                address_book.entries.Add(new Contact(new_contact));
-                ComboBox contact_list_box = this.Address_book_combobox;
-                contact_list_box.Items.Refresh();
+                _addressBook.Entries.Add(new Contact(new_contact));
+                ComboBox contactListBox = Address_book_combobox;
+                contactListBox.Items.Refresh();
                 MessageBox.Show("Contact Added");
             }
             else
@@ -188,22 +172,22 @@ namespace IMS_client
             }
         }
 
-        private void Remove_Contact_Click(object sender, RoutedEventArgs e)
+        private void RemoveContactClick(object sender, RoutedEventArgs e)
         {
 
-            Address_Book_window my_address_book_window = TryFindParent<Address_Book_window>(sender as Button);
-            ComboBox combo_box = my_address_book_window.Address_book_combobox;
+            AddressBookWindow myAddressBookWindow = TryFindParent<AddressBookWindow>(sender as Button);
+            ComboBox comboBox = myAddressBookWindow.Address_book_combobox;
 
             int index = 0;
-            foreach (Contact contact in address_book.entries)
+            foreach (Contact contact in _addressBook.Entries)
             {
-                if (contact.Name == combo_box.SelectedItem.ToString())
+                if (contact.Name == comboBox.SelectedItem.ToString())
                 {
-                    index = address_book.entries.IndexOf(contact);
+                    index = _addressBook.Entries.IndexOf(contact);
                 }
             }
-            address_book.entries.RemoveAt(index);
-            combo_box.Items.Refresh();
+            _addressBook.Entries.RemoveAt(index);
+            comboBox.Items.Refresh();
 
         }
     }

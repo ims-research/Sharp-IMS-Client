@@ -1,17 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 
 namespace IMS_client
 {
-    public class Address_Book
+    public class AddressBook
     {
-        public List<Contact> entries;
+        public List<Contact> Entries;
         
-        public Address_Book()
+        public AddressBook()
         {
-            entries = new List<Contact>();
+            Entries = new List<Contact>();
         }
     }
 }
