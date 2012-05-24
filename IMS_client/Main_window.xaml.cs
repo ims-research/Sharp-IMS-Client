@@ -37,10 +37,10 @@ namespace IMS_client
         readonly Debug_window _myDebugWindow;
         readonly IM_window _myIMWindow;
 
-        XDMS_handler _xdmsHandler;
-        Presence_Handler _presenceHandler;
+        XdmsHandler _xdmsHandler;
+        PresenceHandler _presenceHandler;
         IMHandler _imHandler;
-        Multimedia_Handler _mediaHandler;
+        MultimediaHandler _mediaHandler;
         CallHandler _callHandler;
         private static readonly ILog Log = LogManager.GetLogger(typeof(SIPApp));
 
@@ -204,13 +204,13 @@ namespace IMS_client
             //sip_stack.uri.user = "alice";
 
 
-            _app.Raw_Sent_Event += StackRawSentEvent;
-            _app.Raw_Recv_Event += StackRawRecvEvent;
-            _app.Request_Recv_Event += StackRequestRecvEvent;
-            _app.Response_Recv_Event += StackResponseRecvEvent;
-            _app.Sip_Sent_Event += StackSipSentEvent;
-            _app.Error_Event += stack_Error_Event;
-            _app.Reg_Event += StackRegEvent;
+            _app.RawSentEvent += StackRawSentEvent;
+            _app.RawRecvEvent += StackRawRecvEvent;
+            _app.RequestRecvEvent += StackRequestRecvEvent;
+            _app.ResponseRecvEvent += StackResponseRecvEvent;
+            _app.SipSentEvent += StackSipSentEvent;
+            _app.ErrorEvent += stack_Error_Event;
+            _app.RegEvent += StackRegEvent;
         }
 
         void StackSipSentEvent(object sender, SipMessageEventArgs e)
@@ -309,12 +309,12 @@ namespace IMS_client
                         int expires = int.Parse(temp.Substring(temp.IndexOf("expires=")+8));
                         if (expires > 0)
                         {
-                            this._app.regState = "Registered";
+                            this._app.RegState = "Registered";
                             StackRegEvent(this, new RegistrationChangedEventArgs("Registered", response));
                         }
                         else if (expires == 0)
                         {
-                            this._app.regState = "Deregistered";
+                            this._app.RegState = "Deregistered";
                             StackRegEvent(this, new RegistrationChangedEventArgs("Deregistered", response));
                        }
                     }
@@ -399,16 +399,16 @@ namespace IMS_client
                         Log.Info("MESSAGE: " + request.Body);
                         _imHandler.ProcessMessage(request);
 
-                        if (_app.messageUA == null)
+                        if (_app.MessageUA == null)
                         {
-                            _app.messageUA = new UserAgent(_sipStack)
+                            _app.MessageUA = new UserAgent(_sipStack)
                                                  {
-                                                     LocalParty = _app.registerUA.LocalParty,
+                                                     LocalParty = _app.RegisterUA.LocalParty,
                                                      RemoteParty = new Address(request.Uri.ToString())
                                                  };
                         }
-                        Message m = _app.messageUA.CreateResponse(200, "OK");
-                        _app.messageUA.SendResponse(m);
+                        Message m = _app.MessageUA.CreateResponse(200, "OK");
+                        _app.MessageUA.SendResponse(m);
                         break;
                     }
                 case "OPTIONS":
@@ -416,16 +416,16 @@ namespace IMS_client
                 case "SUBSCRIBE":
                 case "NOTIFY":
                     {
-                        if (_app.presenceUA == null)
+                        if (_app.PresenceUA == null)
                         {
-                            _app.presenceUA = new UserAgent(_sipStack)
+                            _app.PresenceUA = new UserAgent(_sipStack)
                                                        {
-                                                           LocalParty = _app.registerUA.LocalParty,
+                                                           LocalParty = _app.RegisterUA.LocalParty,
                                                            RemoteParty = new Address(request.Uri.ToString())
                                                        };
                         }
-                        Message m = _app.presenceUA.CreateResponse(200, "OK");
-                        _app.presenceUA.SendResponse(m);
+                        Message m = _app.PresenceUA.CreateResponse(200, "OK");
+                        _app.PresenceUA.SendResponse(m);
                         break;
                     }
                 case "PUBLISH":
@@ -440,7 +440,7 @@ namespace IMS_client
             {
                 if (request.First("event").ToString().Contains("presence"))
                 {
-                    _presenceHandler.Process_Request(request);
+                    _presenceHandler.ProcessRequest(request);
                 }
             }
         }
@@ -467,14 +467,14 @@ namespace IMS_client
 
         private void Create_XDMS_Handler()
         {
-            _xdmsHandler = new XDMS_handler(_settings.xdms_user_name,
+            _xdmsHandler = new XdmsHandler(_settings.xdms_user_name,
                 _settings.xdms_password,
                 _settings.xdms_server_name,
                 _settings.xdms_server_port,
                 _settings.ims_realm);
 
-            _xdmsHandler.Request_Log_Event += XdmsRequestLogEvent;
-            _xdmsHandler.Response_Log_Event += XdmsResponseLogEvent;
+            _xdmsHandler.RequestLogEvent += XdmsRequestLogEvent;
+            _xdmsHandler.ResponseLogEvent += XdmsResponseLogEvent;
         }
 
         private void LoadSettings()
@@ -486,8 +486,8 @@ namespace IMS_client
 
         private void Create_Presence_Handler()
         {
-            _presenceHandler = new Presence_Handler(_app, _settings);
-            _presenceHandler.Presence_Changed_Event += PresenceHandlerPresenceChangedEvent;
+            _presenceHandler = new PresenceHandler(_app);
+            _presenceHandler.PresenceChangedEvent += PresenceHandlerPresenceChangedEvent;
         }
 
         private void Create_IM_Handler()
@@ -499,8 +499,8 @@ namespace IMS_client
 
         private void Create_Media_Handler()
         {
-            _mediaHandler = new Multimedia_Handler(_settings);
-            _mediaHandler.Gst_Log_Event += GstMessageLogEvent;
+            _mediaHandler = new MultimediaHandler(_settings);
+            _mediaHandler.GstLogEvent += GstMessageLogEvent;
         }
 
         private void Create_Call_Handler()
@@ -572,10 +572,10 @@ namespace IMS_client
 
         #region Address_Book
 
-        private AddressBook RetrieveAddressBook(XDMS_handler xdmsHandler)
+        private AddressBook RetrieveAddressBook(XdmsHandler xdmsHandler)
         {
             AddressBook tempAddressBook = null;
-            XDocument xmlDocument = xdmsHandler.Retrieve_File("Resources\\address_book.xml");
+            XDocument xmlDocument = xdmsHandler.RetrieveFile("Resources\\address_book.xml");
             if (xmlDocument.Root != null)
             {
                 tempAddressBook = Load_Address_Book_from_Xml(xmlDocument);
@@ -583,12 +583,12 @@ namespace IMS_client
             return tempAddressBook;
         }
 
-        private void SaveAddressBook(AddressBook addressBook, XDMS_handler xdmsHandler)
+        private void SaveAddressBook(AddressBook addressBook, XdmsHandler xdmsHandler)
         {
             string xml = SaveAddressBookToXml(addressBook);
             if (_settings.xdms_enabled)
             {
-                xdmsHandler.Store_File("address_book.xml", xml);
+                xdmsHandler.StoreFile("address_book.xml", xml);
             }
         }
 
@@ -619,7 +619,7 @@ namespace IMS_client
             {
                 foreach (Contact contact in addressBook.Entries)
                 {
-                    contact.GetStatus().display_name = contact.Name;
+                    contact.GetStatus().DisplayName = contact.Name;
                 }
             }
 
@@ -689,7 +689,7 @@ namespace IMS_client
         void GstMessageLogEvent(object sender, GstMessageEventArgs e)
         {
             AddGstMessageHandler messageHandler = _myDebugWindow.AddGstMessage;
-            Dispatcher.BeginInvoke(DispatcherPriority.Render, messageHandler, e.type, e.message);
+            Dispatcher.BeginInvoke(DispatcherPriority.Render, messageHandler, e.Type, e.Message);
         }
 
         delegate void AddSipResponseMessageHandler(int code, string message);
@@ -711,10 +711,10 @@ namespace IMS_client
         void MainWindowClosed(object sender, EventArgs e)
         {
             _mainWindowIsClosed = true;
-            _mediaHandler.Stop_Loop();
+            _mediaHandler.StopLoop();
             _myDebugWindow.Close();
             _myIMWindow.Close();
-            _mediaHandler.video_window.Close();
+            _mediaHandler.VideoWindow.Close();
             Save_Settings_to_Xml("Resources\\settings.xml", _settings);
             //TODO Shut down SIP Stack / de register / publish offline etc.
             //if (sip_stack.isRunning)
@@ -900,7 +900,7 @@ namespace IMS_client
                                             BindsDirectlyToSource = true,
                                             UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged,
                                             Source = contact.GetStatus(),
-                                            Converter = new Status_Converter()
+                                            Converter = new StatusConverter()
                                         };
                 basic.SetBinding(Image.SourceProperty, myBinding);
                 basic.Width = 30;
@@ -948,7 +948,7 @@ namespace IMS_client
             }
         }
 
-        void PresenceHandlerPresenceChangedEvent(object sender, Presence_Handler.PresenceChangedArgs e)
+        void PresenceHandlerPresenceChangedEvent(object sender, PresenceHandler.PresenceChangedArgs e)
         {
 
             bool foundContact = false;
@@ -958,11 +958,11 @@ namespace IMS_client
             {
                 foreach (Contact contact in _addressBook.Entries)
                 {
-                    if (contact.SipUri == e.contact)
+                    if (contact.SipUri == e.Contact)
                     {
                         Status status = contact.GetStatus();
-                        status.basic = e.basis;
-                        status.note = e.note;
+                        status.Basic = e.Basis;
+                        status.Note = e.Note;
 
                         foundContact = true;
                         index = counter;
@@ -972,7 +972,7 @@ namespace IMS_client
                 }
                 if (!foundContact)
                 {
-                    MessageBox.Show("Did not find contact for status update (" + e.contact + ")");
+                    MessageBox.Show("Did not find contact for status update (" + e.Contact + ")");
                 }
             }
             catch (Exception exc)
@@ -1233,7 +1233,7 @@ namespace IMS_client
 
         private void SettingsClick(object sender, RoutedEventArgs e)
         {
-            Settings_window mySettingsWindow = new Settings_window {SizeToContent = SizeToContent.WidthAndHeight};
+            SettingsWindow mySettingsWindow = new SettingsWindow {SizeToContent = SizeToContent.WidthAndHeight};
 
             TabControl optionsTabControl = mySettingsWindow.Options_tab_control;
 
@@ -1323,15 +1323,15 @@ namespace IMS_client
             }
             mySettingsWindow.Show();
             mySettingsWindow.SizeToContent = SizeToContent.Manual;
-            mySettingsWindow.Closed += new EventHandler(SettingsWindowClosed);
+            mySettingsWindow.Closed += SettingsWindowClosed;
         }
 
-        private void Load_Defaults_ComboBox(ComboBox new_control,string option_name)
+        private void Load_Defaults_ComboBox(ComboBox newControl,string optionName)
         {
-            if (option_name.ToLower().Contains("auth"))
+            if (optionName.ToLower().Contains("auth"))
             {
-                new_control.Items.Add("MD5");
-                new_control.Items.Add("AKAv1-MD5");
+                newControl.Items.Add("MD5");
+                newControl.Items.Add("AKAv1-MD5");
             }
         }
 
@@ -1388,24 +1388,21 @@ namespace IMS_client
                         return textbox;
                 }
             }
-            else
-            {
-                TextBox textbox = new TextBox();
-                textbox.SetBinding(TextBox.TextProperty, myBinding);
-                textbox.MaxHeight = 30;
-                textbox.MaxWidth = 200;
-                textbox.HorizontalContentAlignment = HorizontalAlignment.Center;
-                textbox.HorizontalAlignment = HorizontalAlignment.Stretch;
-                textbox.VerticalContentAlignment = VerticalAlignment.Center;
-                textbox.VerticalAlignment = VerticalAlignment.Stretch;
-                return textbox;
-            }
+            TextBox genericTextBox = new TextBox();
+            genericTextBox.SetBinding(TextBox.TextProperty, myBinding);
+            genericTextBox.MaxHeight = 30;
+            genericTextBox.MaxWidth = 200;
+            genericTextBox.HorizontalContentAlignment = HorizontalAlignment.Center;
+            genericTextBox.HorizontalAlignment = HorizontalAlignment.Stretch;
+            genericTextBox.VerticalContentAlignment = VerticalAlignment.Center;
+            genericTextBox.VerticalAlignment = VerticalAlignment.Stretch;
+            return genericTextBox;
         }
 
         #endregion
 
         #region General_Stack
-        void my_user_agent_IncomingCall(object sender, Message message)
+        void MyUserAgentIncomingCall(object sender, Message message)
         {
             //TODO handle incoming call
             //    if (!call_handler.in_call)
@@ -1442,14 +1439,11 @@ namespace IMS_client
                 };
                 worker.RunWorkerAsync();
             };
-            this.Dispatcher.BeginInvoke(DispatcherPriority.Background, workAction);
+            Dispatcher.BeginInvoke(DispatcherPriority.Background, workAction);
             _soundPlayer.Dispatcher.Invoke(
-                 System.Windows.Threading.DispatcherPriority.Normal,
+                 DispatcherPriority.Normal,
                  new Action(
-                     delegate()
-                     {
-                         _soundPlayer.Stop();
-                     }));
+                     () => _soundPlayer.Stop()));
             _callHandler.SetState(CallState.Active);
         }
 
@@ -1457,12 +1451,9 @@ namespace IMS_client
         {
             //TODO Check Cancel Call
             _soundPlayer.Dispatcher.Invoke(
-                 System.Windows.Threading.DispatcherPriority.Normal,
+                 DispatcherPriority.Normal,
                  new Action(
-                     delegate()
-                     {
-                         _soundPlayer.Stop();
-                     }));
+                     () => _soundPlayer.Stop()));
             _callHandler.CancelCall(null);
         }
 

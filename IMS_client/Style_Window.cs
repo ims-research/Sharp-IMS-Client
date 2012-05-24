@@ -1,21 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Windows.Input;
 using System.Windows;
-
-
-using System.Windows.Controls;
-using System.Windows.Shapes;
 using System.Windows.Interop;
 using System.Runtime.InteropServices;
 
-using System.Windows.Media;
-using System.Collections;
-
 namespace IMS_client
 {
-    public partial class Style_Window
+    public partial class StyleWindow
     {
         #region sizing event handlers
 
@@ -109,7 +99,7 @@ namespace IMS_client
 
 
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
-        static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+        static extern IntPtr SendMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
 
         void DragSize(IntPtr handle, SizingAction sizingAction)
         {

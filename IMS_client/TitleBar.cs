@@ -1,45 +1,37 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
 namespace IMS_client
 {
     public class TitleBar : Control
     {
-        ImageButton closeButton;
-        ImageButton maxButton;
-        ImageButton minButton;
+        ImageButton _closeButton;
+        ImageButton _maxButton;
+        ImageButton _minButton;
 
         public TitleBar()
         {
-            this.MouseLeftButtonDown += new MouseButtonEventHandler(OnTitleBarLeftButtonDown);
-            this.MouseDoubleClick += new MouseButtonEventHandler(TitleBar_MouseDoubleClick);
-            this.Loaded += new RoutedEventHandler(TitleBar_Loaded);
+            MouseLeftButtonDown += OnTitleBarLeftButtonDown;
+            MouseDoubleClick += TitleBarMouseDoubleClick;
+            Loaded += TitleBarLoaded;
         }
 
-        void TitleBar_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        void TitleBarMouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            MaxButton_Click(sender, e);
+            MaxButtonClick(sender, e);
         }
 
-        void TitleBar_Loaded(object sender, RoutedEventArgs e)
+        void TitleBarLoaded(object sender, RoutedEventArgs e)
         {
-            closeButton = (ImageButton)this.Template.FindName("CloseButton", this);
-            minButton = (ImageButton)this.Template.FindName("MinButton", this);
-            maxButton = (ImageButton)this.Template.FindName("MaxButton", this);
+            _closeButton = (ImageButton)Template.FindName("CloseButton", this);
+            _minButton = (ImageButton)Template.FindName("MinButton", this);
+            _maxButton = (ImageButton)Template.FindName("MaxButton", this);
 
-            closeButton.Click += new RoutedEventHandler(CloseButton_Click);
-            minButton.Click += new RoutedEventHandler(MinButton_Click);
-            maxButton.Click += new RoutedEventHandler(MaxButton_Click);
+            _closeButton.Click += CloseButtonClick;
+            _minButton.Click += MinButtonClick;
+            _maxButton.Click += MaxButtonClick;
         }
 
 
@@ -54,49 +46,49 @@ namespace IMS_client
 
         void OnTitleBarLeftButtonDown(object sender, MouseEventArgs e)
         {
-            Window window = this.TemplatedParent as Window;
+            Window window = TemplatedParent as Window;
             if (window != null)
             {
                 window.DragMove();
             }
         }
 
-        void CloseButton_Click(object sender, RoutedEventArgs e)
+        void CloseButtonClick(object sender, RoutedEventArgs e)
         {
-            Window window = this.TemplatedParent as Window;
+            Window window = TemplatedParent as Window;
             if (window != null)
             {
                 window.Close();
             }
         }
 
-        void MinButton_Click(object sender, RoutedEventArgs e)
+        void MinButtonClick(object sender, RoutedEventArgs e)
         {
-            Window window = this.TemplatedParent as Window;
+            Window window = TemplatedParent as Window;
             if (window != null)
             {
                 window.WindowState = WindowState.Minimized;
             }
         }
 
-        void MaxButton_Click(object sender, RoutedEventArgs e)
+        void MaxButtonClick(object sender, RoutedEventArgs e)
         {
-            Window window = this.TemplatedParent as Window;
+            Window window = TemplatedParent as Window;
             if (window != null)
             {
                 if (window.WindowState == WindowState.Maximized)
                 {
-                    maxButton.ImageDown = "Images/maxpressed_n.png";
-                    maxButton.ImageNormal = "Images/max_n.png";
-                    maxButton.ImageOver = "Images/maxhot_n.png";
+                    _maxButton.ImageDown = "Images/maxpressed_n.png";
+                    _maxButton.ImageNormal = "Images/max_n.png";
+                    _maxButton.ImageOver = "Images/maxhot_n.png";
 
                     window.WindowState = WindowState.Normal;
                 }
                 else
                 {
-                    maxButton.ImageDown = "Images/normalpress.png";
-                    maxButton.ImageNormal = "Images/normal.png";
-                    maxButton.ImageOver = "Images/normalhot.png";
+                    _maxButton.ImageDown = "Images/normalpress.png";
+                    _maxButton.ImageNormal = "Images/normal.png";
+                    _maxButton.ImageOver = "Images/normalhot.png";
 
                     window.WindowState = WindowState.Maximized;
                 }

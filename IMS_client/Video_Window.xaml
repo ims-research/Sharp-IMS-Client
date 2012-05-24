@@ -1,4 +1,4 @@
-﻿<Window x:Class="IMS_client.Video_Window"
+﻿<Window x:Class="IMS_client.VideoWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:wf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"  

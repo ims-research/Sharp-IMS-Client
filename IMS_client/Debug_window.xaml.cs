@@ -58,27 +58,27 @@ namespace IMS_client
 
         public void AddHttpResponseMessage(HttpWebResponseEventArgs e)
         {
-            HttpWebResponse response = e.response;
+            HttpWebResponse response = e.Response;
             ListBoxItem lbi = new ListBoxItem {Content = "Response"};
 
             string headers = "";
             headers += "Response to " + response.Method + " " + response.ResponseUri + "\n";
             headers = response.Headers.Cast<string>().Aggregate(headers, (current, key) => current + (key + ":" + response.Headers[key] + "\n"));
-            lbi.Tag = headers + e.content;
-            lbi.ToolTip = headers + e.content;
+            lbi.Tag = headers + e.Content;
+            lbi.ToolTip = headers + e.Content;
             Debug_http_msg_listbox.Items.Add(lbi);
         }
 
         public void AddHttpRequestMessage(HttpRequestEventArgs e)
         {
-            HttpWebRequest request = e.request;
+            HttpWebRequest request = e.Request;
             ListBoxItem lbi = new ListBoxItem();
             string headers = "";
             headers += request.Method + " " + request.RequestUri + "\n";
             headers = request.Headers.Cast<string>().Aggregate(headers, (current, key) => current + (key + ":" + request.Headers[key] + "\n"));
             lbi.Content = request.Method;
-            lbi.Tag = headers + e.content;
-            lbi.ToolTip = headers + e.content;
+            lbi.Tag = headers + e.Content;
+            lbi.ToolTip = headers + e.Content;
             Debug_http_msg_listbox.Items.Add(lbi);
         }
 

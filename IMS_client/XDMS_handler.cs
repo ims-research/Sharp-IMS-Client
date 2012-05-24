@@ -9,57 +9,57 @@ namespace IMS_client
 {
     public class HttpRequestEventArgs : EventArgs
     {
-        public HttpWebRequest request;
-        public string content;
+        public HttpWebRequest Request;
+        public string Content;
 
-        public HttpRequestEventArgs(HttpWebRequest Request, string Content)
+        public HttpRequestEventArgs(HttpWebRequest request, string content)
         {
-            this.request = Request;
-            content = Content;
+            Request = request;
+            Content = content;
         }
     }
 
     public class HttpWebResponseEventArgs : EventArgs
     {
-        public HttpWebResponse response;
-        public string content;
+        public HttpWebResponse Response;
+        public string Content;
 
-        public HttpWebResponseEventArgs(HttpWebResponse Response, string Content)
+        public HttpWebResponseEventArgs(HttpWebResponse response, string content)
         {
-            this.response = Response;
-            content = Content;
+            Response = response;
+            Content = content;
         }
     }
 
-    public class XDMS_handler
+    public class XdmsHandler
     {
-        public event EventHandler<HttpWebResponseEventArgs> Response_Log_Event;
-        public event EventHandler<HttpRequestEventArgs> Request_Log_Event;
-        string user_name { get; set; }
-        string password { get; set; }
-        string server_name { get; set; }
-        int server_port { get; set; }
-        string realm { get; set; }
+        public event EventHandler<HttpWebResponseEventArgs> ResponseLogEvent;
+        public event EventHandler<HttpRequestEventArgs> RequestLogEvent;
+        string UserName { get; set; }
+        string Password { get; set; }
+        string ServerName { get; set; }
+        int ServerPort { get; set; }
+        string Realm { get; set; }
 
 
 
-        public XDMS_handler(string User_name, string Password, string Server_name, int Port, string Realm)
+        public XdmsHandler(string userName, string password, string serverName, int port, string realm)
         {
-            user_name = User_name;
-            password = Password;
-            server_name = Server_name;
-            server_port = Port;
-            realm = Realm;
+            UserName = userName;
+            Password = password;
+            ServerName = serverName;
+            ServerPort = port;
+            Realm = realm;
         }
 
-        public void Store_File(string xml_doc_name, string xml)
+        public void StoreFile(string xmlDocName, string xml)
         {
 
             try
             {
-                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(new Uri(new Uri("http://" + server_name + ":" + server_port), "/xcap-root/test-app/users/" + "sip:" + user_name + "@" + realm + "/Resources/" + xml_doc_name));
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(new Uri(new Uri("http://" + ServerName + ":" + ServerPort), "/xcap-root/test-app/users/" + "sip:" + UserName + "@" + Realm + "/Resources/" + xmlDocName));
                 request.Method = "PUT";
-                request.Credentials = request.Credentials = new NetworkCredential(user_name, password);
+                request.Credentials = request.Credentials = new NetworkCredential(UserName, Password);
                 request.ContentType = "application/test-app+xml";
 
                 StreamWriter writer = new StreamWriter(request.GetRequestStream());
@@ -67,9 +67,9 @@ namespace IMS_client
                 writer.WriteLine(xml);
                 writer.Close();
 
-             if (this.Request_Log_Event!= null)
+             if (RequestLogEvent!= null)
             {
-                this.Request_Log_Event(this,new HttpRequestEventArgs(request,XDocument.Parse(xml).ToString()));
+                RequestLogEvent(this,new HttpRequestEventArgs(request,XDocument.Parse(xml).ToString()));
             }
 
              HttpWebResponse response = (HttpWebResponse)request.GetResponse();
@@ -81,30 +81,28 @@ namespace IMS_client
                 // used on each read operation
             byte[] buf = new byte[8192];
 
-             string tempString = null;
-             int count = 0;
+                int count = 0;
 
              do
              {
                  // fill the buffer with data
-                 count = resStream.Read(buf, 0, buf.Length);
+                 if (resStream != null) count = resStream.Read(buf, 0, buf.Length);
 
                  // make sure we read some data
                  if (count != 0)
                  {
                      // translate from bytes to ASCII text
-                     tempString = Encoding.ASCII.GetString(buf, 0, count);
+                     string tempString = Encoding.ASCII.GetString(buf, 0, count);
 
                      // continue building the string
                      sb.Append(tempString);
                  }
-             }
-             while (count > 0); // any more data to read?
+             } while (count > 0); // any more data to read?
 
 
-                if (this.Response_Log_Event != null)
+                if (ResponseLogEvent != null)
                 {
-                    this.Response_Log_Event(this, new HttpWebResponseEventArgs(response,sb.ToString()));
+                    ResponseLogEvent(this, new HttpWebResponseEventArgs(response,sb.ToString()));
                 }
             }
             catch (Exception e)
@@ -113,20 +111,16 @@ namespace IMS_client
             }
         }
 
-        public XDocument Retrieve_File(string xml_doc_name)
+        public XDocument RetrieveFile(string xmlDocName)
         {
-            XDocument xml_document = new XDocument();
-            XmlWriter writer = xml_document.CreateWriter();
-
+            XDocument xmlDocument = new XDocument();
             try
             {
 
-                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(new Uri(new Uri("http://" + server_name + ":" + server_port), "/xcap-root/test-app/users/" + "sip:" + user_name + "@" + realm + "/" + xml_doc_name));
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(new Uri(new Uri("http://" + ServerName + ":" + ServerPort), "/xcap-root/test-app/users/" + "sip:" + UserName + "@" + Realm + "/" + xmlDocName));
                 request.Method = "GET";
-                request.Credentials = request.Credentials = new NetworkCredential(user_name, password);
+                request.Credentials = request.Credentials = new NetworkCredential(UserName, Password);
                 request.ContentType = "application/test-app+xml";
-
-                XmlWriter xml_writer = xml_document.CreateWriter();
 
                 // used to build entire input
                 StringBuilder sb = new StringBuilder();
@@ -134,9 +128,9 @@ namespace IMS_client
                 // used on each read operation
                 byte[] buf = new byte[8192];
 
-                if (this.Request_Log_Event != null)
+                if (RequestLogEvent != null)
                 {
-                    this.Request_Log_Event(this, new HttpRequestEventArgs(request,"No Content"));
+                    RequestLogEvent(this, new HttpRequestEventArgs(request,"No Content"));
                 }
 
 
@@ -144,38 +138,36 @@ namespace IMS_client
                 
                 Stream resStream = response.GetResponseStream();
 
-                string tempString = null;
                 int count = 0;
 
                 do
                 {
                     // fill the buffer with data
-                    count = resStream.Read(buf, 0, buf.Length);
+                    if (resStream != null) count = resStream.Read(buf, 0, buf.Length);
 
                     // make sure we read some data
                     if (count != 0)
                     {
                         // translate from bytes to ASCII text
-                        tempString = Encoding.ASCII.GetString(buf, 0, count);
+                        string tempString = Encoding.ASCII.GetString(buf, 0, count);
 
                         // continue building the string
                         sb.Append(tempString);
                     }
-                }
-                while (count > 0); // any more data to read?
+                } while (count > 0); // any more data to read?
 
-                xml_document = XDocument.Parse(sb.ToString());
+                xmlDocument = XDocument.Parse(sb.ToString());
 
-                if (this.Response_Log_Event != null)
+                if (ResponseLogEvent != null)
                 {
-                    this.Response_Log_Event(this, new HttpWebResponseEventArgs(response,xml_document.ToString()));
+                    ResponseLogEvent(this, new HttpWebResponseEventArgs(response,xmlDocument.ToString()));
                 }
             }
             catch (Exception e)
             {
                 MessageBox.Show("Error retrieving network stored address book - check XDMS settings. Error:" + e.Message.ToString());
             }
-            return xml_document;
+            return xmlDocument;
         }
     }
 }

@@ -3,58 +3,52 @@ using System.Text;
 using System.Net;
 using System.Net.Sockets;
 using SIPLib.SIP;
+using SIPLib.utils;
 using log4net;
 
 namespace IMS_client
 {
     public class SIPApp : SIPLib.SIPApp
     {
-        public override SIPStack stack { get; set; }
-        public string username { get; set; }
-        public string realm { get; set; }
-        public string password { get; set; }
-        public string regState { get; set; }
+        public override SIPStack Stack { get; set; }
+        public string Username { get; set; }
+        public string Realm { get; set; }
+        public string Password { get; set; }
+        public string RegState { get; set; }
 
-        private byte[] temp_buffer { get; set; }
+        private byte[] TempBuffer { get; set; }
 
-        public override TransportInfo transport { get; set; }
+        public override sealed TransportInfo Transport { get; set; }
 
-        public  UserAgent registerUA { get; set; }
+        public  UserAgent RegisterUA { get; set; }
 
-        private UserAgent callUA { get; set; }
-        public UserAgent messageUA { get; set; }
-        public UserAgent presenceUA { get; set; }
+        private UserAgent CallUA { get; set; }
+        public UserAgent MessageUA { get; set; }
+        public UserAgent PresenceUA { get; set; }
 
-        public event EventHandler<RawEventArgs> Raw_Recv_Event;
-        public event EventHandler<RawEventArgs> Raw_Sent_Event;
-        public override event EventHandler<RawEventArgs> Received_Data_Event;
-        public event EventHandler<SipMessageEventArgs> Request_Recv_Event;
-        public event EventHandler<SipMessageEventArgs> Response_Recv_Event;
-        public event EventHandler<SipMessageEventArgs> Sip_Sent_Event;
-        public event EventHandler<StackErrorEventArgs> Error_Event;
-        public event EventHandler<RegistrationChangedEventArgs> Reg_Event;
+        public event EventHandler<RawEventArgs> RawRecvEvent;
+        public event EventHandler<RawEventArgs> RawSentEvent;
+        public override event EventHandler<RawEventArgs> ReceivedDataEvent;
+        public event EventHandler<SipMessageEventArgs> RequestRecvEvent;
+        public event EventHandler<SipMessageEventArgs> ResponseRecvEvent;
+        public event EventHandler<SipMessageEventArgs> SipSentEvent;
+        public event EventHandler<StackErrorEventArgs> ErrorEvent;
+        public event EventHandler<RegistrationChangedEventArgs> RegEvent;
 
-        private static ILog _log = LogManager.GetLogger(typeof(SIPApp));
+        private static readonly ILog Log = LogManager.GetLogger(typeof(SIPApp));
 
         public SIPApp(TransportInfo transport)
         {
             log4net.Config.XmlConfigurator.Configure();
-            this.temp_buffer = new byte[4096];
-            if (transport.type == ProtocolType.Tcp)
-            {
-                transport.socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            }
-            else
-            {
-                transport.socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            }
-            IPEndPoint localEP = new IPEndPoint(transport.host, transport.port);
-            transport.socket.Bind(localEP);
+            TempBuffer = new byte[4096];
+            transport.Socket = transport.Type == ProtocolType.Tcp ? new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp) : new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            IPEndPoint localEP = new IPEndPoint(transport.Host, transport.Port);
+            transport.Socket.Bind(localEP);
 
             IPEndPoint sender = new IPEndPoint(IPAddress.Any, 0);
-            EndPoint sendEP = (EndPoint)sender;
-            transport.socket.BeginReceiveFrom(temp_buffer, 0, temp_buffer.Length, SocketFlags.None, ref sendEP, new AsyncCallback(ReceiveDataCB), sendEP);
-            this.transport = transport;
+            EndPoint sendEP = sender;
+            transport.Socket.BeginReceiveFrom(TempBuffer, 0, TempBuffer.Length, SocketFlags.None, ref sendEP, ReceiveDataCB, sendEP);
+            Transport = transport;
         }
 
         
@@ -64,47 +58,47 @@ namespace IMS_client
             try
             {
                 IPEndPoint sender = new IPEndPoint(IPAddress.Any, 0);
-                EndPoint sendEP = (EndPoint)sender;
-                int bytesRead = transport.socket.EndReceiveFrom(asyncResult, ref sendEP);
-                string data = ASCIIEncoding.ASCII.GetString(temp_buffer, 0, bytesRead);
-                string remote_host = ((IPEndPoint)sendEP).Address.ToString();
-                string remote_port = ((IPEndPoint)sendEP).Port.ToString();
-                if (this.Raw_Recv_Event != null)
+                EndPoint sendEP = sender;
+                int bytesRead = Transport.Socket.EndReceiveFrom(asyncResult, ref sendEP);
+                string data = Encoding.ASCII.GetString(TempBuffer, 0, bytesRead);
+                string remoteHost = ((IPEndPoint)sendEP).Address.ToString();
+                string remotePort = ((IPEndPoint)sendEP).Port.ToString();
+                if (RawRecvEvent != null)
                 {
-                    this.Raw_Recv_Event(this, new RawEventArgs(data, new string[] { remote_host, remote_port }));
+                    RawRecvEvent(this, new RawEventArgs(data, new[] { remoteHost, remotePort }));
                 }
-                if (this.Received_Data_Event != null)
+                if (ReceivedDataEvent != null)
                 {
-                    this.Received_Data_Event(this, new RawEventArgs(data, new string[] { remote_host, remote_port }));
+                    ReceivedDataEvent(this, new RawEventArgs(data, s: new[] { remoteHost, remotePort }));
                 }
-                this.transport.socket.BeginReceiveFrom(this.temp_buffer, 0, this.temp_buffer.Length, SocketFlags.None, ref sendEP, new AsyncCallback(this.ReceiveDataCB), sendEP);
+                Transport.Socket.BeginReceiveFrom(TempBuffer, 0, TempBuffer.Length, SocketFlags.None, ref sendEP, ReceiveDataCB, sendEP);
             }
             catch (Exception ex)
             {
-                if (this.Error_Event != null)
+                if (ErrorEvent != null)
                 {
-                    this.Error_Event(this, new StackErrorEventArgs("Receive Data Callback", ex));
+                    ErrorEvent(this, new StackErrorEventArgs("Receive Data Callback", ex));
                 }
             }
         }
 
-        public override void send(string data, string ip, int port, SIPStack stack)
+        public override void Send(string data, string ip, int port, SIPStack stack)
         {
-            IPAddress[] addresses = System.Net.Dns.GetHostAddresses(ip);
+            IPAddress[] addresses = Dns.GetHostAddresses(ip);
             IPEndPoint dest = new IPEndPoint(addresses[0], port);
-            EndPoint destEP = (EndPoint)dest;
-            byte[] send_data = ASCIIEncoding.ASCII.GetBytes(data);
-            string remote_host = ((IPEndPoint)destEP).Address.ToString();
-            string remote_port = ((IPEndPoint)destEP).Port.ToString();
+            EndPoint destEP = dest;
+            byte[] sendData = Encoding.ASCII.GetBytes(data);
+            string remoteHost = ((IPEndPoint)destEP).Address.ToString();
+            string remotePort = ((IPEndPoint)destEP).Port.ToString();
 
-            stack.transport.socket.BeginSendTo(send_data, 0, send_data.Length, SocketFlags.None, destEP, new AsyncCallback(this.SendDataCB), destEP);
-            if (this.Raw_Sent_Event != null)
+            stack.Transport.Socket.BeginSendTo(sendData, 0, sendData.Length, SocketFlags.None, destEP, SendDataCB, destEP);
+            if (RawSentEvent != null)
             {
-                this.Raw_Sent_Event(this, new RawEventArgs(data, new string[] { remote_host, remote_port }));
+                RawSentEvent(this, new RawEventArgs(data, new[] { remoteHost, remotePort }));
             }
-            if (this.Sip_Sent_Event != null)
+            if (SipSentEvent != null)
             {
-                this.Sip_Sent_Event(this, new SipMessageEventArgs(new Message(data)));
+                SipSentEvent(this, new SipMessageEventArgs(new Message(data)));
             }
         }
 
@@ -112,134 +106,132 @@ namespace IMS_client
         {
             try
             {
-                stack.transport.socket.EndSend(asyncResult);
+                Stack.Transport.Socket.EndSend(asyncResult);
             }
             catch (Exception ex)
             {
-                _log.Error("Error in sendDataCB", ex);
-                if (this.Error_Event != null)
+                Log.Error("Error in sendDataCB", ex);
+                if (ErrorEvent != null)
                 {
-                    this.Error_Event(this, new StackErrorEventArgs("Send Data Callback", ex));
+                    ErrorEvent(this, new StackErrorEventArgs("Send Data Callback", ex));
                 }
             }
         }
 
-        public override UserAgent createServer(Message request, SIPURI uri, SIPStack stack)
+        public override UserAgent CreateServer(Message request, SIPURI uri, SIPStack stack)
         {
-            if (request.method == "INVITE")
+            if (request.Method == "INVITE")
             {
-                return new UserAgent(this.stack, request);
+                return new UserAgent(Stack, request);
             }
-            else return null;
+            return null;
         }
 
-        public override void sending(UserAgent ua, Message message, SIPStack stack)
+        public override void Sending(UserAgent ua, Message message, SIPStack stack)
         {
-            if (Utils.isRequest(message))
+            if (Utils.IsRequest(message))
             {
-                _log.Info("Sending request with method " + message.method);
+                Log.Info("Sending request with method " + message.Method);
             }
             else
             {
-                _log.Info("Sending response with code " + message.response_code);
+                Log.Info("Sending response with code " + message.ResponseCode);
             }
-            _log.Debug("\n\n" + message.ToString());
+            Log.Debug("\n\n" + message.ToString());
             //TODO: Allow App to modify message before it gets sent?;
         }
 
-        public override void cancelled(UserAgent ua, Message request, SIPStack stack)
+        public override void Cancelled(UserAgent ua, Message request, SIPStack stack)
         {
             throw new NotImplementedException();
         }
 
-        public override void dialogCreated(Dialog dialog, UserAgent ua, SIPStack stack)
+        public override void DialogCreated(Dialog dialog, UserAgent ua, SIPStack stack)
         {
-            this.callUA = dialog;
-            _log.Info("New dialog created");
+            CallUA = dialog;
+            Log.Info("New dialog created");
         }
 
-        public override Timer createTimer(UserAgent app, SIPStack stack)
+        public override Timer CreateTimer(UserAgent app, SIPStack stack)
         {
             return new Timer(app);
         }
 
-        public override string[] authenticate(UserAgent ua, Header header, SIPStack stack)
+        public override string[] Authenticate(UserAgent ua, Header header, SIPStack stack)
         {
-            return new string[] { this.username + "@" + this.realm, this.password };
+            return new[] { Username + "@" + Realm, Password };
         }
 
-        public override void receivedResponse(UserAgent ua, Message response, SIPStack stack)
+        public override void ReceivedResponse(UserAgent ua, Message response, SIPStack stack)
         {
-            _log.Info("Received response with code " + response.response_code + " " + response.response_text);
-            _log.Debug("\n\n" + response.ToString());
-            if (this.Response_Recv_Event != null)
+            Log.Info("Received response with code " + response.ResponseCode + " " + response.ResponseText);
+            Log.Debug("\n\n" + response.ToString());
+            if (ResponseRecvEvent != null)
             {
-                this.Response_Recv_Event(this, new SipMessageEventArgs(response));
+                ResponseRecvEvent(this, new SipMessageEventArgs(response));
             }
         }
 
-        public override void receivedRequest(UserAgent ua, Message request, SIPStack stack)
+        public override void ReceivedRequest(UserAgent ua, Message request, SIPStack stack)
         {
-            _log.Info("Received request with method " + request.method.ToUpper());
-            _log.Debug("\n\n" + request.ToString());
-            if (this.Request_Recv_Event != null)
+            Log.Info("Received request with method " + request.Method.ToUpper());
+            Log.Debug("\n\n" + request.ToString());
+            if (RequestRecvEvent != null)
             {
-                this.Request_Recv_Event(this, new SipMessageEventArgs(request,ua));
+                RequestRecvEvent(this, new SipMessageEventArgs(request,ua));
             }
 
         }
 
-        public void timeout(Transaction transaction)
+        public void Timeout(Transaction transaction)
         {
             throw new NotImplementedException();
         }
 
-        public void error(Transaction transaction, string error)
+        public void Error(Transaction transaction, string error)
         {
             throw new NotImplementedException();
         }
 
-        public void SendIM(string uri, string message,string content_type = "text/plain")
+        public void SendIM(string uri, string message,string contentType = "text/plain")
         {
             uri = checkURI(uri);
-            if (isRegistered())
+            if (IsRegistered())
             {
-                this.messageUA = new UserAgent(this.stack);
-                this.messageUA.localParty = this.registerUA.localParty;
-                this.messageUA.remoteParty = new Address(uri);
-                Message m = this.messageUA.createRequest("MESSAGE", message);
-                m.insertHeader(new Header("", "Content-Type"));
-                this.messageUA.sendRequest(m);
+                MessageUA = new UserAgent(Stack) {LocalParty = RegisterUA.LocalParty, RemoteParty = new Address(uri)};
+                Message m = MessageUA.CreateRequest("MESSAGE", message);
+                m.InsertHeader(new Header("", "Content-Type"));
+                MessageUA.SendRequest(m);
             }
         }
 
-        public void endCurrentCall()
+        public void EndCurrentCall()
         {
-            if (isRegistered())
+            if (IsRegistered())
             {
-                if (this.callUA != null)
+                if (CallUA != null)
                 {
                     try
                     {
-                        Dialog d = (Dialog)this.callUA;
-                        Message bye = d.createRequest("BYE");
-                        d.sendRequest(bye);
+                        Dialog d = (Dialog)CallUA;
+                        Message bye = d.CreateRequest("BYE");
+                        d.SendRequest(bye);
                     }
-                    catch (InvalidCastException E)
+                    catch (InvalidCastException e)
                     {
-                        _log.Error("Error ending current call, Dialog Does not Exist ?", E);
+                        Log.Error("Error ending current call, Dialog Does not Exist ?", e);
                     }
 
                 }
                 else
                 {
-                    _log.Error("Call UA does not exist, not sending CANCEL message");
+                    Log.Error("Call UA does not exist, not sending CANCEL message");
                 }
 
             }
             else
             {
-                _log.Error("Not registered, not sending CANCEL message");
+                Log.Error("Not registered, not sending CANCEL message");
             }
 
         }
@@ -253,103 +245,94 @@ namespace IMS_client
             return uri;
         }
 
-        private bool isRegistered()
+        private bool IsRegistered()
         {
-            if (this.registerUA == null || this.registerUA.localParty == null)
-                return false;
-            else return true;
+            if (RegisterUA == null || RegisterUA.LocalParty == null) return false;
+            return true;
         }
 
         public void Register(string username, string password, string realm)
         {
-            this.username = username;
-            this.password = password;
-            this.realm = realm;
-            this.registerUA = new UserAgent(this.stack, null, false);
-            Message register_msg = this.registerUA.createRegister(new SIPURI("sip:"+username+"@"+realm));
-            register_msg.insertHeader(new Header("3600", "Expires"));
-            this.registerUA.sendRequest(register_msg);
+            Username = username;
+            Password = password;
+            Realm = realm;
+            RegisterUA = new UserAgent(Stack);
+            Message registerMsg = RegisterUA.CreateRegister(new SIPURI("sip:"+username+"@"+realm));
+            registerMsg.InsertHeader(new Header("3600", "Expires"));
+            RegisterUA.SendRequest(registerMsg);
         }
 
         public void Register(string uri)
         {
-            if (this.Reg_Event != null)
+            if (RegEvent != null)
             {
-                this.Reg_Event(this, new RegistrationChangedEventArgs("Registering", null));
+                RegEvent(this, new RegistrationChangedEventArgs("Registering", null));
             }
-            this.registerUA = new UserAgent(this.stack, null, false);
-            Message register_msg = this.registerUA.createRegister(new SIPURI(uri));
-            register_msg.insertHeader(new Header("3600", "Expires"));
-            this.registerUA.sendRequest(register_msg);
+            RegisterUA = new UserAgent(Stack);
+            Message registerMsg = RegisterUA.CreateRegister(new SIPURI(uri));
+            registerMsg.InsertHeader(new Header("3600", "Expires"));
+            RegisterUA.SendRequest(registerMsg);
         }
 
         public void Invite(string uri)
         {
             uri = checkURI(uri);
-            if (isRegistered())
+            if (IsRegistered())
             {
-                this.callUA = new UserAgent(this.stack, null, false);
-                this.callUA.localParty = this.registerUA.localParty;
-                this.callUA.remoteParty = new Address(uri);
-                Message invite = this.callUA.createRequest("INVITE");
-                this.callUA.sendRequest(invite);
+                CallUA = new UserAgent(Stack) {LocalParty = RegisterUA.LocalParty, RemoteParty = new Address(uri)};
+                Message invite = CallUA.CreateRequest("INVITE");
+                CallUA.SendRequest(invite);
             }
             else
             {
-                _log.Error("isRegistered failed in invite message");
+                Log.Error("isRegistered failed in invite message");
             }
         }
 
         public  void Invite(string uri, SDP sdp)
         {
             uri = checkURI(uri);
-            if (isRegistered())
+            if (IsRegistered())
             {
-                this.callUA = new UserAgent(this.stack, null, false);
-                this.callUA.localParty = this.registerUA.localParty;
-                this.callUA.remoteParty = new Address(uri);
-                Message invite = this.callUA.createRequest("INVITE");
-                invite.insertHeader(new Header("application/sdp", "Content-Type"));
-                invite.body = sdp.ToString();
-                this.callUA.sendRequest(invite);
+                CallUA = new UserAgent(Stack) {LocalParty = RegisterUA.LocalParty, RemoteParty = new Address(uri)};
+                Message invite = CallUA.CreateRequest("INVITE");
+                invite.InsertHeader(new Header("application/sdp", "Content-Type"));
+                invite.Body= sdp.ToString();
+                CallUA.SendRequest(invite);
             }
             else
             {
-                _log.Error("isRegistered failed in invite message");
+                Log.Error("isRegistered failed in invite message");
             }
         }
 
-        internal void acceptCall(SDP sdp)
+        internal void AcceptCall(SDP sdp)
         {
-            Message response = this.callUA.createResponse(200, "OK");
-            response.insertHeader(new Header("application/sdp", "Content-Type"));
-            response.body = sdp.ToString();
-            this.callUA.sendResponse(response);
+            Message response = CallUA.CreateResponse(200, "OK");
+            response.InsertHeader(new Header("application/sdp", "Content-Type"));
+            response.Body= sdp.ToString();
+            CallUA.SendResponse(response);
         }
 
-        internal void stopCall(SDP sdp)
+        internal void StopCall(SDP sdp)
         {
-            Message response = this.callUA.createResponse(200, "OK");
-            response.insertHeader(new Header("application/sdp", "Content-Type"));
-            response.body = sdp.ToString();
-            this.callUA.sendResponse(response);
+            Message response = CallUA.CreateResponse(200, "OK");
+            response.InsertHeader(new Header("application/sdp", "Content-Type"));
+            response.Body = sdp.ToString();
+            CallUA.SendResponse(response);
         }
 
-        internal void publish(string sip_uri, string basic, string note, int expires)
+        internal void Publish(string sipUri, string basic, string note, int expires)
         {
-            this.presenceUA = new UserAgent(this.stack, null, false);
-            this.presenceUA.localParty = this.registerUA.localParty;
-            this.presenceUA.remoteParty = new Address(sip_uri);
-
-
-            Message request = this.presenceUA.createRequest("PUBLISH");
-            request.insertHeader(new Header("presence", "Event"));
-            request.insertHeader(new Header(this.presenceUA.localParty.ToString(), "P-Preferred-Identity"));
-            request.insertHeader(new Header("application/pidf+xml", "Content-Type"));
+            PresenceUA = new UserAgent(Stack) {LocalParty = RegisterUA.LocalParty, RemoteParty = new Address(sipUri)};
+            Message request = PresenceUA.CreateRequest("PUBLISH");
+            request.InsertHeader(new Header("presence", "Event"));
+            request.InsertHeader(new Header(PresenceUA.LocalParty.ToString(), "P-Preferred-Identity"));
+            request.InsertHeader(new Header("application/pidf+xml", "Content-Type"));
             
             StringBuilder sb = new StringBuilder();
             sb.Append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-            sb.Append("<presence xmlns=\"urn:ietf:params:xml:ns:pidf\" xmlns:im=\"urn:ietf:params:xml:ns:pidf:im\" entity=\"" + sip_uri + "\">\n");
+            sb.Append("<presence xmlns=\"urn:ietf:params:xml:ns:pidf\" xmlns:im=\"urn:ietf:params:xml:ns:pidf:im\" entity=\"" + sipUri + "\">\n");
             sb.Append("<tuple id=\"Sharp_IMS_Client\">\n");
             sb.Append("<status>\n");
             sb.Append("<basic>" + basic + "</basic>\n");
@@ -358,8 +341,8 @@ namespace IMS_client
             sb.Append("</tuple>\n");
             sb.Append("</presence>\n");
 
-            request.body = sb.ToString();
-            this.presenceUA.sendRequest(request);
+            request.Body = sb.ToString();
+            PresenceUA.SendRequest(request);
         }
     }
 }

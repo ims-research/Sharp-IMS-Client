@@ -40,30 +40,25 @@ namespace IMS_client
 
         public Preferences()
         {
-            Initialise_Variables();
+            InitialiseVariables();
         }
 
-        public Preferences(string PCSCF_hostname,int PCSCF_port,string Realm,string Public_Id,string Private_Id,string Password,bool Presence_enabled)
+        public Preferences(string pcscfHostname,int pcscfPort,string realm,string publicId,string privateId,string password,bool presenceEnabled)
         {
-            Initialise_Variables();
+            InitialiseVariables();
 
-            ims_proxy_cscf_hostname = PCSCF_hostname;
-            ims_proxy_cscf_port = PCSCF_port;
-            ims_realm = Realm;
-            ims_public_user_identity = Public_Id;
-            ims_private_user_identity = Private_Id;
-            ims_password = Password;
-            presence_enabled = Presence_enabled;
+            ims_proxy_cscf_hostname = pcscfHostname;
+            ims_proxy_cscf_port = pcscfPort;
+            ims_realm = realm;
+            ims_public_user_identity = publicId;
+            ims_private_user_identity = privateId;
+            ims_password = password;
+            presence_enabled = presenceEnabled;
         }
 
-        private void Initialise_Variables()
+        private void InitialiseVariables()
         {
-            option_sections = new List<string>();
-            option_sections.Add("IMS");
-            option_sections.Add("Presence");
-            option_sections.Add("XDMS");
-            option_sections.Add("VideoCall");
-            option_sections.Add("AudioCall");
+            option_sections = new List<string> {"IMS", "Presence", "XDMS", "VideoCall", "AudioCall"};
 
             ims_proxy_cscf_hostname = "pcscf.open-ims.test";
             ims_proxy_cscf_port = 4060;
@@ -82,14 +77,16 @@ namespace IMS_client
             videocall_width = 320;
             videocall_height = 240;
             
-            setting_item_types = new Dictionary<string, string>();
-            setting_item_types.Add("presence_enabled", "checkbox");
-            setting_item_types.Add("xdms_enabled", "checkbox");
-            setting_item_types.Add("ims_use_detected_ip", "checkbox");
-            setting_item_types.Add("ims_service_route", "hidden");
-            setting_item_types.Add("ims_auth", "combobox");
-            setting_item_types.Add("audiocall_first_codec", "audio_codec_choice");
-            setting_item_types.Add("audiocall_second_codec", "audio_codec_choice");
+            setting_item_types = new Dictionary<string, string>
+                                     {
+                                         {"presence_enabled", "checkbox"},
+                                         {"xdms_enabled", "checkbox"},
+                                         {"ims_use_detected_ip", "checkbox"},
+                                         {"ims_service_route", "hidden"},
+                                         {"ims_auth", "combobox"},
+                                         {"audiocall_first_codec", "audio_codec_choice"},
+                                         {"audiocall_second_codec", "audio_codec_choice"}
+                                     };
         }
     }
 }

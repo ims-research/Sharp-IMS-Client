@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 
 namespace IMS_client
 {
@@ -10,12 +6,12 @@ namespace IMS_client
     {
         private string _basic;
         private string _note;
-        private string _display_name;
+        private string _displayName;
 
-        public string basic { get { return _basic; } set { 
+        public string Basic { get { return _basic; } set { 
             _basic = value;
             OnPropertyChanged("basic"); } }
-        public string note
+        public string Note
         {
             get { return _note; }
             set
@@ -24,35 +20,35 @@ namespace IMS_client
                 OnPropertyChanged("note");
             }
         }
-        public string display_name
+        public string DisplayName
         {
-            get { return _display_name; }
+            get { return _displayName; }
             set
             {
-                _display_name = value;
+                _displayName = value;
                 OnPropertyChanged("display_name");
             }
         }
 
         public Status()
         {
-            basic="nothing_yet ";
-            note = "nothing_yet ";
-            display_name = "nothing_yet ";
+            Basic="nothing_yet ";
+            Note = "nothing_yet ";
+            DisplayName = "nothing_yet ";
 
         }
 
-        public  Status(string Basic, string Note,string Display_name)
+        public  Status(string basic, string note,string displayName)
         {
-            basic = Basic;
-            note = Note;
-            display_name = Display_name;
+            Basic = basic;
+            Note = note;
+            DisplayName = displayName;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;                
           protected void OnPropertyChanged(string propertyName)                    
           {
-              if (this.PropertyChanged != null)                                    
+              if (PropertyChanged != null)                                    
                  PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
          }                                                                     
         

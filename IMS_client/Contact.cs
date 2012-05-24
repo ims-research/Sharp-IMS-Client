@@ -22,9 +22,9 @@ namespace IMS_client
 
         public void SetStatus(Status status)
         {
-            Status.basic = status.basic;
-            Status.note = status.note;
-            Status.display_name = status.display_name;
+            Status.Basic = status.Basic;
+            Status.Note = status.Note;
+            Status.DisplayName = status.DisplayName;
         }
 
 

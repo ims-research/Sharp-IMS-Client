@@ -1,39 +1,35 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Windows;
 using Gst;
 using Gst.GLib;
-using System.Windows.Forms.Integration;
 
 namespace IMS_client
 {
     public class GstMessageEventArgs : EventArgs
     {
-        public string type;
-        public string message;
+        public string Type;
+        public string Message;
 
         public GstMessageEventArgs(string type, string message)
         {
-            this.type = type;
-            this.message = message;
+            Type = type;
+            Message = message;
         }
     }
 
-    class Multimedia_Handler
+    class MultimediaHandler
     {
-        public event EventHandler<GstMessageEventArgs> Gst_Log_Event;
-        Preferences settings;
+        public event EventHandler<GstMessageEventArgs> GstLogEvent;
+        readonly Preferences _settings;
 
-        Element video_tx_pipeline, video_rx_pipeline, audio_tx_pipeline, audio_rx_pipeline;
-        MainLoop loop;
-        public Video_Window video_window;
+        Element _videoTxPipeline, _videoRxPipeline, _audioTxPipeline, _audioRxPipeline;
+        MainLoop _loop;
+        public VideoWindow VideoWindow;
 
-        public Multimedia_Handler(Preferences Settings)
+        public MultimediaHandler(Preferences settings)
         {
-            settings = Settings;
-            System.Environment.SetEnvironmentVariable("GST_DEBUG", "*:2");
+            _settings = settings;
+            Environment.SetEnvironmentVariable("GST_DEBUG", "*:2");
             //C:\gstreamer-newold\lib\gstreamer-0.10
             //System.Environment.SetEnvironmentVariable("GST_PLUGIN_PATH",  "c:\\gstreamer-newold\\lib\\gstreamer-0.10");
             //System.Environment.SetEnvironmentVariable("PATH", "c:\\gstreamer-newold\\bin;" + System.Environment.GetEnvironmentVariable("PATH"));
@@ -49,357 +45,348 @@ namespace IMS_client
             //glib_loop_thread = new System.Threading.Thread(this.Glib_Loop);
             //glib_loop_thread.Start();
 
-            video_window = new Video_Window();
+            VideoWindow = new VideoWindow();
         }
 
 
-        public void Glib_Loop()
+        public void GlibLoop()
         {
-            loop = new MainLoop();
-            loop.Run();
+            _loop = new MainLoop();
+            _loop.Run();
         }
 
-        public void Start_Video_Rx(int recv_port,string name)
+        public void StartVideoRx(int recvPort,string name)
         {
-            Element udp_src, rtp_h263_depayloader, h263_decoder, csp_filter, screen_sink;
-            Caps caps;
-
-            video_rx_pipeline = new Pipeline("videorx-pipeline");
-            Bin bin = (Bin)video_rx_pipeline;
+            _videoRxPipeline = new Pipeline("videorx-pipeline");
+            Bin bin = (Bin)_videoRxPipeline;
             //bin.Bus.AddWatch(new BusFunc(BusCall));
-            video_rx_pipeline.Bus.AddSignalWatch();
-            video_rx_pipeline.Bus.Message += delegate(object o, MessageArgs args)
-            { BusCall(o, args.Message); };
+            _videoRxPipeline.Bus.AddSignalWatch();
+            _videoRxPipeline.Bus.Message += (o, args) => BusCall(args.Message);
 
-            udp_src = ElementFactory.Make("udpsrc", "udp_src");
-            rtp_h263_depayloader = ElementFactory.Make("rtph263pdepay", "h263_deplayloader");
-            h263_decoder = ElementFactory.Make("ffdec_h263", "h263_decoder");
-            csp_filter = ElementFactory.Make("ffmpegcolorspace", "csp_filter_rx");
+            Element udpSrc = ElementFactory.Make("udpsrc", "udp_src");
+            Element rtpH263Depayloader = ElementFactory.Make("rtph263pdepay", "h263_deplayloader");
+            Element h263Decoder = ElementFactory.Make("ffdec_h263", "h263_decoder");
+            Element cspFilter = ElementFactory.Make("ffmpegcolorspace", "csp_filter_rx");
 
-            screen_sink = ElementFactory.Make("dshowvideosink", "video-sink_rx");
+            Element screenSink = ElementFactory.Make("dshowvideosink", "video-sink_rx");
 
-            if ((video_rx_pipeline == null) || (udp_src == null) || (rtp_h263_depayloader == null) || (h263_decoder == null) || (csp_filter == null) || (screen_sink == null))
+            if ((_videoRxPipeline == null) || (udpSrc == null) || (rtpH263Depayloader == null) || (h263Decoder == null) || (cspFilter == null) || (screenSink == null))
             {
                 MessageBox.Show("Error Creating Gstreamer Elements for Recieving Video!");
             }
-            udp_src["port"] = recv_port;
-
-            bin.Add(udp_src, rtp_h263_depayloader, h263_decoder, csp_filter, screen_sink);
-            caps = Gst.Caps.FromString("application/x-rtp,clock-rate=90000,payload=96,encoding-name=H263-1998");
-
-            if (!udp_src.LinkFiltered(rtp_h263_depayloader, caps))
+            else
             {
-                Console.WriteLine("link failed between udp_src and rtp_h263_depayloader");
-            }
+                udpSrc["port"] = recvPort;
 
-            if (!Gst.Element.Link(rtp_h263_depayloader, h263_decoder, csp_filter, screen_sink))
-            {
-                Console.WriteLine("link failed between rtp_h263_depayloader and screen_sink");
-            }
+                bin.Add(udpSrc, rtpH263Depayloader, h263Decoder, cspFilter, screenSink);
+                Caps caps = Caps.FromString("application/x-rtp,clock-rate=90000,payload=96,encoding-name=H263-1998");
 
-            Gst.Interfaces.XOverlayAdapter xadapter = new Gst.Interfaces.XOverlayAdapter(screen_sink.Handle);
-            
-            video_window.wfhost2.Dispatcher.Invoke(
+                if (!udpSrc.LinkFiltered(rtpH263Depayloader, caps))
+                {
+                    Console.WriteLine("link failed between udp_src and rtp_h263_depayloader");
+                }
+
+                if (!Element.Link(rtpH263Depayloader, h263Decoder, cspFilter, screenSink))
+                {
+                    Console.WriteLine("link failed between rtp_h263_depayloader and screen_sink");
+                }
+
+                Gst.Interfaces.XOverlayAdapter xadapter = new Gst.Interfaces.XOverlayAdapter(screenSink.Handle);
+
+                VideoWindow.wfhost2.Dispatcher.Invoke(
                     System.Windows.Threading.DispatcherPriority.Normal,
                     new Action(
-                        delegate()
-                        {
-                            video_window.remote_video_label.Content = "Remote Video:" + name;
-                            xadapter.XwindowId = (ulong)video_window.video_rx_canvas.Handle;
-                        }));
+                        delegate
+                            {
+                                VideoWindow.remote_video_label.Content = "Remote Video:" + name;
+                                xadapter.XwindowId = (ulong) VideoWindow.video_rx_canvas.Handle;
+                            }));
 
-            video_rx_pipeline.SetState(State.Playing);
+                _videoRxPipeline.SetState(State.Playing);
+            }
         }
 
-        public void Start_Video_Tx(string dest_ip, int dest_port)
+        public void StartVideoTx(string destIP, int destPort)
         {
-            video_window.Dispatcher.Invoke(
+            VideoWindow.Dispatcher.Invoke(
                    System.Windows.Threading.DispatcherPriority.Normal,
                    new Action(
-                       delegate()
-                       {
-                           video_window.Show();
-                       }));
+                       () => VideoWindow.Show()));
 
-            Element camera_src, screen_sink;
-            Element csp_filter, csp_filter2, tee;
-            Element h263_encoder, rtp_h263_payloader, udp_sink, udp_queue, screen_queue;
-            Caps caps;
+            Element cameraSrc;
 
-            video_tx_pipeline = new Pipeline("videotx-pipeline");
-            Bin bin = (Bin)video_tx_pipeline;
+            _videoTxPipeline = new Pipeline("videotx-pipeline");
+            Bin bin = (Bin)_videoTxPipeline;
             //bin.Bus.AddWatch(new BusFunc(BusCall));
-            video_tx_pipeline.Bus.AddSignalWatch();
-            video_tx_pipeline.Bus.Message += delegate(object o, MessageArgs args)
-            { BusCall(o, args.Message); };
+            _videoTxPipeline.Bus.AddSignalWatch();
+            _videoTxPipeline.Bus.Message += (o, args) => BusCall(args.Message);
 
 
-            if ((camera_src = ElementFactory.Make("videotestsrc", "video_src_tx")) == null)
+            if ((cameraSrc = ElementFactory.Make("videotestsrc", "video_src_tx")) == null)
             {
                 Console.WriteLine("Could not create webcam-source");
             }
 
-            csp_filter = ElementFactory.Make("ffmpegcolorspace", "filter_tx");
-            csp_filter2 = ElementFactory.Make("ffmpegcolorspace", "filter2_tx");
-            screen_sink = ElementFactory.Make("dshowvideosink", "video-sink_tx");
-            tee = ElementFactory.Make("tee", "tee_tx");
+            Element cspFilter = ElementFactory.Make("ffmpegcolorspace", "filter_tx");
+            Element cspFilter2 = ElementFactory.Make("ffmpegcolorspace", "filter2_tx");
+            Element screenSink = ElementFactory.Make("dshowvideosink", "video-sink_tx");
+            Element tee = ElementFactory.Make("tee", "tee_tx");
 
-            screen_queue = ElementFactory.Make("queue", "screen-queue_tx");
-            udp_queue = ElementFactory.Make("queue", "udp-queue_tx");
+            Element screenQueue = ElementFactory.Make("queue", "screen-queue_tx");
+            Element udpQueue = ElementFactory.Make("queue", "udp-queue_tx");
 
-            h263_encoder = ElementFactory.Make("ffenc_h263p", "ffenc_h263p_tx");
-            rtp_h263_payloader = ElementFactory.Make("rtph263ppay", "rtp_payloader_tx");
-            udp_sink = ElementFactory.Make("udpsink", "udp_sink_tx");
+            Element h263Encoder = ElementFactory.Make("ffenc_h263p", "ffenc_h263p_tx");
+            Element rtpH263Payloader = ElementFactory.Make("rtph263ppay", "rtp_payloader_tx");
+            Element udpSink = ElementFactory.Make("udpsink", "udp_sink_tx");
 
-            if ((video_tx_pipeline == null) || (camera_src == null) || (screen_sink == null) || (csp_filter == null) || (csp_filter2 == null) || (h263_encoder == null) ||
-                (rtp_h263_payloader == null) || (udp_sink == null) || (udp_queue == null) || (screen_queue == null))
+            if ((_videoTxPipeline == null) || (cameraSrc == null) || (screenSink == null) || (cspFilter == null) || (cspFilter2 == null) || (h263Encoder == null) ||
+                (rtpH263Payloader == null) || (udpSink == null) || (udpQueue == null) || (screenQueue == null))
             {
-                MessageBox.Show("Error Creating Gstreamer Elements!");
+                MessageBox.Show("Error Creating Gstreamer Elements for sending video!");
             }
-            udp_sink["host"] = dest_ip;
-            udp_sink["port"] = dest_port;
+            else
+            {
+                
+            udpSink["host"] = destIP;
+            udpSink["port"] = destPort;
 
-            bin.Add(camera_src, screen_sink, csp_filter, csp_filter2, tee, h263_encoder, rtp_h263_payloader, udp_sink, udp_queue, screen_queue);
-            caps = Gst.Caps.FromString("video/x-raw-rgb,width=" + settings.videocall_width + ",height=" + settings.videocall_height);
+            bin.Add(cameraSrc, screenSink, cspFilter, cspFilter2, tee, h263Encoder, rtpH263Payloader, udpSink, udpQueue, screenQueue);
+            Caps caps = Caps.FromString("video/x-raw-rgb,width=" + _settings.videocall_width + ",height=" + _settings.videocall_height);
 
-            if (!camera_src.LinkFiltered(tee, caps))
+            if (!cameraSrc.LinkFiltered(tee, caps))
             {
                 Console.WriteLine("link failed between camera_src and tee");
             }
 
-            if (!Gst.Element.Link(tee, csp_filter, screen_queue, screen_sink))
+            if (!Element.Link(tee, cspFilter, screenQueue, screenSink))
             {
                 Console.WriteLine("link failed between tee and screen_sink");
             }
 
-            if (!Gst.Element.Link(tee, csp_filter2, udp_queue, h263_encoder, rtp_h263_payloader, udp_sink))
+            if (!Element.Link(tee, cspFilter2, udpQueue, h263Encoder, rtpH263Payloader, udpSink))
             {
                 Console.WriteLine("link failed between tee and udp_sink");
             }
 
-            Gst.Interfaces.XOverlayAdapter xadapter = new Gst.Interfaces.XOverlayAdapter(screen_sink.Handle);
+            Gst.Interfaces.XOverlayAdapter xadapter = new Gst.Interfaces.XOverlayAdapter(screenSink.Handle);
             
-            video_window.wfhost1.Dispatcher.Invoke(
+            VideoWindow.wfhost1.Dispatcher.Invoke(
                     System.Windows.Threading.DispatcherPriority.Normal,
                     new Action(
-                        delegate()
-                        {
-                            video_window.local_video_label.Content = "Local Video: " + settings.ims_public_user_identity;
-                            xadapter.XwindowId = (ulong)video_window.video_tx_canvas.Handle;
+                        delegate
+                            {
+                            VideoWindow.local_video_label.Content = "Local Video: " + _settings.ims_public_user_identity;
+                            xadapter.XwindowId = (ulong)VideoWindow.video_tx_canvas.Handle;
                         }));
 
-            video_tx_pipeline.SetState(State.Playing);
+            _videoTxPipeline.SetState(State.Playing);
+            }
+
         }
 
-        public void Start_Audio_Tx(string dest_ip, int dest_port, int codec)
+        public void StartAudioTx(string destIP, int destPort, int codec)
         {
-            Element ds_src, audio_convert, audio_resample, encoder, payloader, udp_sink;
-            Caps caps;
-            string encoder_name, payloader_name;
+            string encoderName, payloaderName;
             switch (codec)
             {
                 case 0:
-                    encoder_name = "mulawenc";
-                    payloader_name = "rtppcmupay";
+                    encoderName = "mulawenc";
+                    payloaderName = "rtppcmupay";
                     break;
                 case 3:
-                    encoder_name = "gsmenc";
-                    payloader_name = "rtpgsmpay";
+                    encoderName = "gsmenc";
+                    payloaderName = "rtpgsmpay";
                     break;
                 case 8:
-                    encoder_name = "alawenc";
-                    payloader_name = "rtppcmapay";
+                    encoderName = "alawenc";
+                    payloaderName = "rtppcmapay";
                     break;
                 case 14:
-                    encoder_name = "ffenc_mp2";
-                    payloader_name = "rtpmpapay";
+                    encoderName = "ffenc_mp2";
+                    payloaderName = "rtpmpapay";
                     break;
                 default:
-                    encoder_name = "mulawenc";
-                    payloader_name = "rtppcmupay";
+                    encoderName = "mulawenc";
+                    payloaderName = "rtppcmupay";
                     break;
             }
 
-            audio_tx_pipeline = new Pipeline("audiotx-pipeline");
-            Bin bin = (Bin)audio_tx_pipeline;
+            _audioTxPipeline = new Pipeline("audiotx-pipeline");
+            Bin bin = (Bin)_audioTxPipeline;
             //bin.Bus.AddWatch(new BusFunc(BusCall));
-            audio_tx_pipeline.Bus.AddSignalWatch();
-            audio_tx_pipeline.Bus.Message += delegate(object o, MessageArgs args)
-            { BusCall(o, args.Message); };
+            _audioTxPipeline.Bus.AddSignalWatch();
+            _audioTxPipeline.Bus.Message += (o, args) => BusCall(args.Message);
 
             //ds_src = ElementFactory.Make("dshowaudiosrc", "dshow-audio-in");
-            ds_src = ElementFactory.Make("audiotestsrc", "dshow-audio-in");
-            audio_convert = ElementFactory.Make("audioconvert", "audio_convert");
-            audio_resample = ElementFactory.Make("audioresample", "audio_resample");
-            encoder = ElementFactory.Make(encoder_name, encoder_name);
+            Element dsSrc = ElementFactory.Make("audiotestsrc", "dshow-audio-in");
+            Element audioConvert = ElementFactory.Make("audioconvert", "audio_convert");
+            Element audioResample = ElementFactory.Make("audioresample", "audio_resample");
+            Element encoder = ElementFactory.Make(encoderName, encoderName);
 
-            payloader = ElementFactory.Make(payloader_name, payloader_name);
-            udp_sink = ElementFactory.Make("udpsink", "udp_sink");
+            Element payloader = ElementFactory.Make(payloaderName, payloaderName);
+            Element udpSink = ElementFactory.Make("udpsink", "udp_sink");
 
-            if ((ds_src == null) || (audio_convert == null) || (audio_resample == null) || (encoder == null) || (payloader == null) || (udp_sink == null))
+            if ((dsSrc == null) || (audioConvert == null) || (audioResample == null) || (encoder == null) || (payloader == null) || (udpSink == null))
             {
                 MessageBox.Show("Error Creating Gstreamer Elements for Audio Tx pipeline!");
             }
-
-            udp_sink["host"] = dest_ip;
-            udp_sink["port"] = dest_port;
-
-            bin.Add(ds_src, audio_convert, audio_resample, encoder, payloader, udp_sink);
-
-
-            if (!Gst.Element.Link(ds_src, audio_convert, audio_resample, encoder, payloader, udp_sink))
+            else
             {
-                Console.WriteLine("link failed between ds_src and udp_sink");
-            }
+                udpSink["host"] = destIP;
+                udpSink["port"] = destPort;
+                bin.Add(dsSrc, audioConvert, audioResample, encoder, payloader, udpSink);
+                if (!Element.Link(dsSrc, audioConvert, audioResample, encoder, payloader, udpSink))
+                {
+                    Console.WriteLine("link failed between ds_src and udp_sink");
+                }
 
-            audio_tx_pipeline.SetState(State.Playing);
+                _audioTxPipeline.SetState(State.Playing);
+            }
         }
 
-        public void Start_Audio_Rx(int recv_port, int codec)
+        public void StartAudioRx(int recvPort, int codec)
         {
-            Element udp_src, depayloader, decoder, directsoundsink;
-            Element audioresample, audioconvert;
             Caps caps;
-            string depayloader_name, decoder_name;
+            string depayloaderName, decoderName;
             switch (codec)
             {
                 case 0:
-                    depayloader_name = "rtppcmudepay";
-                    decoder_name = "mulawdec";
-                    caps = Gst.Caps.FromString("application/x-rtp,clock-rate=8000,payload=0");
+                    depayloaderName = "rtppcmudepay";
+                    decoderName = "mulawdec";
+                    caps = Caps.FromString("application/x-rtp,clock-rate=8000,payload=0");
                     break;
                 case 3:
-                    depayloader_name = "rtpgsmdepay";
-                    decoder_name = "gsmdec";
-                    caps = Gst.Caps.FromString("application/x-rtp,clock-rate=8000,payload=3");
+                    depayloaderName = "rtpgsmdepay";
+                    decoderName = "gsmdec";
+                    caps = Caps.FromString("application/x-rtp,clock-rate=8000,payload=3");
                     break;
                 case 8:
-                    depayloader_name = "rtppcmadepay";
-                    decoder_name = "alawdec";
-                    caps = Gst.Caps.FromString("application/x-rtp,clock-rate=8000,payload=8");
+                    depayloaderName = "rtppcmadepay";
+                    decoderName = "alawdec";
+                    caps = Caps.FromString("application/x-rtp,clock-rate=8000,payload=8");
                     break;
                 case 14:
-                    depayloader_name = "rtpmpadepay";
-                    decoder_name = "mad";
-                    caps = Gst.Caps.FromString("application/x-rtp,media=(string)audio,clock-rate=(int)90000,encoding-name=(string)MPA,payload=(int)96");
+                    depayloaderName = "rtpmpadepay";
+                    decoderName = "mad";
+                    caps = Caps.FromString("application/x-rtp,media=(string)audio,clock-rate=(int)90000,encoding-name=(string)MPA,payload=(int)96");
                     break;
                 default:
-                    depayloader_name = "rtppcmudepay";
-                    decoder_name = "mulawdec";
-                    caps = Gst.Caps.FromString("application/x-rtp,clock-rate=8000,payload=0");
+                    depayloaderName = "rtppcmudepay";
+                    decoderName = "mulawdec";
+                    caps = Caps.FromString("application/x-rtp,clock-rate=8000,payload=0");
                     break;
             }
 
-            audio_rx_pipeline = new Pipeline("audiorx-pipeline");
-            Bin bin = (Bin)audio_rx_pipeline;
+            _audioRxPipeline = new Pipeline("audiorx-pipeline");
+            Bin bin = (Bin)_audioRxPipeline;
             //bin.Bus.AddWatch(new BusFunc(BusCall));
-            audio_rx_pipeline.Bus.AddSignalWatch();
-            audio_rx_pipeline.Bus.Message += delegate(object o, MessageArgs args)
-            { BusCall(o, args.Message); };
+            _audioRxPipeline.Bus.AddSignalWatch();
+            _audioRxPipeline.Bus.Message += (o, args) => BusCall(args.Message);
 
 
-            udp_src = ElementFactory.Make("udpsrc", "udp_src");
-            depayloader = ElementFactory.Make(depayloader_name, depayloader_name);
-            decoder = ElementFactory.Make(decoder_name, decoder_name);
-            audioconvert = ElementFactory.Make("audioconvert", "audioconvert");
-            audioresample = ElementFactory.Make("audioresample", "audio_resample");
-            directsoundsink = ElementFactory.Make("directsoundsink", "directsoundsink");
+            Element udpSrc = ElementFactory.Make("udpsrc", "udp_src");
+            Element depayloader = ElementFactory.Make(depayloaderName, depayloaderName);
+            Element decoder = ElementFactory.Make(decoderName, decoderName);
+            Element audioconvert = ElementFactory.Make("audioconvert", "audioconvert");
+            Element audioresample = ElementFactory.Make("audioresample", "audio_resample");
+            Element directsoundsink = ElementFactory.Make("directsoundsink", "directsoundsink");
 
-            if ((udp_src == null) || (depayloader == null) || (decoder == null) || (audioconvert == null) || (audioresample == null) || (directsoundsink == null))
+            if ((udpSrc == null) || (depayloader == null) || (decoder == null) || (audioconvert == null) || (audioresample == null) || (directsoundsink == null))
             {
                 MessageBox.Show("Error Creating Gstreamer Elements for Audio Rx pipeline!");
             }
+            else
+            {
+            udpSrc["port"] = recvPort;
 
+            bin.Add(udpSrc, depayloader, decoder, audioconvert, audioresample, directsoundsink);
 
-            udp_src["port"] = recv_port;
-
-            bin.Add(udp_src, depayloader, decoder, audioconvert, audioresample, directsoundsink);
-
-            if (!udp_src.LinkFiltered(depayloader, caps))
+            if (!udpSrc.LinkFiltered(depayloader, caps))
             {
                 Console.WriteLine("link failed between camera_src and tee");
             }
 
 
-            if (!Gst.Element.Link(depayloader, decoder, audioconvert, audioresample, directsoundsink))
+            if (!Element.Link(depayloader, decoder, audioconvert, audioresample, directsoundsink))
             {
                 Console.WriteLine("link failed between udp_src and directsoundsink");
             }
 
-            audio_rx_pipeline.SetState(State.Playing);
+            _audioRxPipeline.SetState(State.Playing);
+            }
 
         }
 
-        private bool BusCall(object o, Message message)
+        private bool BusCall(Message message)
         {
-            if (this.Gst_Log_Event != null)
+            if (GstLogEvent != null)
             {
                 GstMessageEventArgs eventargs = new GstMessageEventArgs("type", "message");
                 string msg;
                 Enum err;
-                eventargs.type = message.Type.ToString();
+                eventargs.Type = message.Type.ToString();
                 switch (message.Type)
                 {
                     case MessageType.Error:
                         message.ParseError(out err, out msg);
-                        eventargs.message = message.Src.Name + ":\n Error - " + err + "\n" + msg;
+                        eventargs.Message = message.Src.Name + ":\n Error - " + err + "\n" + msg;
                         break;
                     case MessageType.Eos:
-                        eventargs.message = message.Src.Name + ":\n" + "End of stream reached";
+                        eventargs.Message = message.Src.Name + ":\n" + "End of stream reached";
                         break;
                     case MessageType.Warning:
                         message.ParseWarning(out err, out msg);
-                        eventargs.message = message.Src.Name + ":\n Warning - " + err + "\n" + msg;
+                        eventargs.Message = message.Src.Name + ":\n Warning - " + err + "\n" + msg;
                         break;
                     default:
-                        eventargs.message = message.Src.Name + ":\n Default - " + "Entered bus call " + message.Type;
+                        eventargs.Message = message.Src.Name + ":\n Default - " + "Entered bus call " + message.Type;
                         break;
                 }
-                this.Gst_Log_Event(this, eventargs);
+                GstLogEvent(this, eventargs);
             }
             return true;
         }
 
-        public void Stop_Video_Tx()
+        public void StopVideoTx()
         {
-            if (video_tx_pipeline != null)
+            if (_videoTxPipeline != null)
             {
-                video_tx_pipeline.SetState(State.Null);
-                video_tx_pipeline.Dispose();
+                _videoTxPipeline.SetState(State.Null);
+                _videoTxPipeline.Dispose();
             }
         }
 
-        public void Stop_Video_Rx()
+        public void StopVideoRx()
         {
-            if (video_rx_pipeline != null)
+            if (_videoRxPipeline != null)
             {
-                video_rx_pipeline.SetState(State.Null);
-                video_rx_pipeline.Dispose();
+                _videoRxPipeline.SetState(State.Null);
+                _videoRxPipeline.Dispose();
             }
         }
 
-        public void Stop_Audio_Tx()
+        public void StopAudioTx()
         {
-            if (audio_tx_pipeline != null)
+            if (_audioTxPipeline != null)
             {
-                audio_tx_pipeline.SetState(State.Null);
-                audio_tx_pipeline.Dispose();
+                _audioTxPipeline.SetState(State.Null);
+                _audioTxPipeline.Dispose();
             }
         }
 
-        public void Stop_Audio_Rx()
+        public void StopAudioRx()
         {
-            if (audio_rx_pipeline != null)
+            if (_audioRxPipeline != null)
             {
-                audio_rx_pipeline.SetState(State.Null);
-                audio_rx_pipeline.Dispose();
+                _audioRxPipeline.SetState(State.Null);
+                _audioRxPipeline.Dispose();
             }
         }
 
 
-        internal void Stop_Loop()
+        internal void StopLoop()
         {
-            loop.Quit();
+            if (_loop != null) _loop.Quit();
         }
     }
 }
