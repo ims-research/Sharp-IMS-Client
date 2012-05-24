@@ -146,7 +146,7 @@ namespace IMS_client
                 try
                 {
                     XDocument xDoc = XDocument.Load("Resources\\address_book.xml");
-                    _addressBook = Load_Address_Book_from_Xml(xDoc);
+                    _addressBook = LoadAddressBookfromXml(xDoc);
                 }
                 catch (Exception e)
                 {
@@ -578,7 +578,7 @@ namespace IMS_client
             XDocument xmlDocument = xdmsHandler.RetrieveFile("Resources\\address_book.xml");
             if (xmlDocument.Root != null)
             {
-                tempAddressBook = Load_Address_Book_from_Xml(xmlDocument);
+                tempAddressBook = LoadAddressBookfromXml(xmlDocument);
             }
             return tempAddressBook;
         }
@@ -592,7 +592,7 @@ namespace IMS_client
             }
         }
 
-        private AddressBook Load_Address_Book_from_Xml(XDocument xmlDocument)
+        private AddressBook LoadAddressBookfromXml(XDocument xmlDocument)
         {
 
             AddressBook addressBook = null;
@@ -895,7 +895,7 @@ namespace IMS_client
                                             };
 
                 Image basic = new Image {Margin = new Thickness(10)};
-                Binding myBinding = new Binding("basic")
+                Binding myBinding = new Binding("Basic")
                                         {
                                             BindsDirectlyToSource = true,
                                             UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged,
@@ -905,7 +905,7 @@ namespace IMS_client
                 basic.SetBinding(Image.SourceProperty, myBinding);
                 basic.Width = 30;
 
-                myBinding = new Binding("basic")
+                myBinding = new Binding("Basic")
                                 {
                                     BindsDirectlyToSource = true,
                                     UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged,
@@ -919,14 +919,14 @@ namespace IMS_client
                                          HorizontalAlignment = HorizontalAlignment.Center,
                                          VerticalAlignment = VerticalAlignment.Center
                                      };
-                myBinding = new Binding("note")
+                myBinding = new Binding("Note")
                                 {
                                     UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged,
                                     Source = contact.GetStatus()
                                 };
                 note.SetBinding(ToolTipProperty, myBinding);
 
-                myBinding = new Binding("display_name")
+                myBinding = new Binding("DisplayName")
                                 {
                                     UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged,
                                     Source = contact.GetStatus()
