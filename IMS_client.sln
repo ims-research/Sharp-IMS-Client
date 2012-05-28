@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IMS_client", "IMS_client\IMS_client.csproj", "{24E07920-09F7-4244-AAA3-0C3C46C8D878}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SIPLib", "..\SIPLib\SIPLib\SIPLib.csproj", "{BCB5CEA8-22E7-470C-B566-CFEA2D051C9B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SIPLib", "..\C-Sharp-Sip-Lib\SIPLib\SIPLib.csproj", "{BCB5CEA8-22E7-470C-B566-CFEA2D051C9B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

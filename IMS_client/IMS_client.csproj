@@ -354,7 +354,7 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\SIPLib\SIPLib\SIPLib.csproj">
+    <ProjectReference Include="..\..\C-Sharp-Sip-Lib\SIPLib\SIPLib.csproj">
       <Project>{BCB5CEA8-22E7-470C-B566-CFEA2D051C9B}</Project>
       <Name>SIPLib</Name>
     </ProjectReference>
