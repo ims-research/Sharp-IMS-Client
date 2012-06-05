@@ -399,16 +399,17 @@ namespace IMS_client
                         Log.Info("MESSAGE: " + request.Body);
                         _imHandler.ProcessMessage(request);
 
-                        if (_app.MessageUA == null)
+
+                        if (e.UA == null)
                         {
-                            _app.MessageUA = new UserAgent(_sipStack)
+                            e.UA = new UserAgent(_sipStack)
                                                  {
                                                      LocalParty = _app.RegisterUA.LocalParty,
                                                      RemoteParty = new Address(request.Uri.ToString())
                                                  };
                         }
-                        Message m = _app.MessageUA.CreateResponse(200, "OK");
-                        _app.MessageUA.SendResponse(m);
+                        Message m = e.UA.CreateResponse(200, "OK");
+                        e.UA.SendResponse(m);
                         break;
                     }
                 case "OPTIONS":
@@ -416,16 +417,16 @@ namespace IMS_client
                 case "SUBSCRIBE":
                 case "NOTIFY":
                     {
-                        if (_app.PresenceUA == null)
+                        if (e.UA == null)
                         {
-                            _app.PresenceUA = new UserAgent(_sipStack)
+                            e.UA = new UserAgent(_sipStack)
                                                        {
                                                            LocalParty = _app.RegisterUA.LocalParty,
                                                            RemoteParty = new Address(request.Uri.ToString())
                                                        };
                         }
-                        Message m = _app.PresenceUA.CreateResponse(200, "OK");
-                        _app.PresenceUA.SendResponse(m);
+                        Message m = e.UA.CreateResponse(200, "OK");
+                        e.UA.SendResponse(m);
                         break;
                     }
                 case "PUBLISH":
@@ -836,9 +837,8 @@ namespace IMS_client
             {
                 AddStatusItemHandler handler = AddContactStatusItem;
                 Dispatcher.BeginInvoke(DispatcherPriority.Render, handler, contact);
-                // TODO: Re-enable subscription
                 _presenceHandler.Subscribe(contact.SipUri);
-                return;
+                //TODO: Working on subscription
             }
         }
 

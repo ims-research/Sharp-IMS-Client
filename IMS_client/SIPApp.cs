@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Net;
 using System.Net.Sockets;
@@ -22,9 +23,11 @@ namespace IMS_client
 
         public  UserAgent RegisterUA { get; set; }
 
-        private UserAgent CallUA { get; set; }
-        public UserAgent MessageUA { get; set; }
-        public UserAgent PresenceUA { get; set; }
+        //private UserAgent CallUA { get; set; }
+        //public UserAgent MessageUA { get; set; }
+        //public UserAgent PresenceUA { get; set; }
+
+        public List<UserAgent> Useragents { get; set; }
 
         public event EventHandler<RawEventArgs> RawRecvEvent;
         public event EventHandler<RawEventArgs> RawSentEvent;
@@ -49,6 +52,7 @@ namespace IMS_client
             EndPoint sendEP = sender;
             transport.Socket.BeginReceiveFrom(TempBuffer, 0, TempBuffer.Length, SocketFlags.None, ref sendEP, ReceiveDataCB, sendEP);
             Transport = transport;
+            Useragents = new List<UserAgent>();
         }
 
         
@@ -148,7 +152,8 @@ namespace IMS_client
 
         public override void DialogCreated(Dialog dialog, UserAgent ua, SIPStack stack)
         {
-            CallUA = dialog;
+            Useragents.Remove(ua);
+            Useragents.Add(dialog);
             Log.Info("New dialog created");
         }
 
@@ -198,10 +203,12 @@ namespace IMS_client
             uri = checkURI(uri);
             if (IsRegistered())
             {
-                MessageUA = new UserAgent(Stack) {LocalParty = RegisterUA.LocalParty, RemoteParty = new Address(uri)};
-                Message m = MessageUA.CreateRequest("MESSAGE", message);
+                
+                UserAgent mua = new UserAgent(Stack) {LocalParty = RegisterUA.LocalParty, RemoteParty = new Address(uri)};
+                Useragents.Add(mua);
+                Message m = mua.CreateRequest("MESSAGE", message);
                 m.InsertHeader(new Header("", "Content-Type"));
-                MessageUA.SendRequest(m);
+                mua.SendRequest(m);
             }
         }
 
@@ -209,24 +216,25 @@ namespace IMS_client
         {
             if (IsRegistered())
             {
-                if (CallUA != null)
-                {
-                    try
-                    {
-                        Dialog d = (Dialog)CallUA;
-                        Message bye = d.CreateRequest("BYE");
-                        d.SendRequest(bye);
-                    }
-                    catch (InvalidCastException e)
-                    {
-                        Log.Error("Error ending current call, Dialog Does not Exist ?", e);
-                    }
+                // TODO: End current call - lookup ua? 
+                //if (CallUA != null)
+                //{
+                //    try
+                //    {
+                //        Dialog d = (Dialog)CallUA;
+                //        Message bye = d.CreateRequest("BYE");
+                //        d.SendRequest(bye);
+                //    }
+                //    catch (InvalidCastException e)
+                //    {
+                //        Log.Error("Error ending current call, Dialog Does not Exist ?", e);
+                //    }
 
-                }
-                else
-                {
-                    Log.Error("Call UA does not exist, not sending CANCEL message");
-                }
+                //}
+                //else
+                //{
+                //    Log.Error("Call UA does not exist, not sending CANCEL message");
+                //}
 
             }
             else
@@ -279,9 +287,10 @@ namespace IMS_client
             uri = checkURI(uri);
             if (IsRegistered())
             {
-                CallUA = new UserAgent(Stack) {LocalParty = RegisterUA.LocalParty, RemoteParty = new Address(uri)};
-                Message invite = CallUA.CreateRequest("INVITE");
-                CallUA.SendRequest(invite);
+                UserAgent cua = new UserAgent(Stack) {LocalParty = RegisterUA.LocalParty, RemoteParty = new Address(uri)};
+                Useragents.Add(cua);
+                Message invite = cua.CreateRequest("INVITE");
+                cua.SendRequest(invite);
             }
             else
             {
@@ -294,11 +303,12 @@ namespace IMS_client
             uri = checkURI(uri);
             if (IsRegistered())
             {
-                CallUA = new UserAgent(Stack) {LocalParty = RegisterUA.LocalParty, RemoteParty = new Address(uri)};
-                Message invite = CallUA.CreateRequest("INVITE");
+                UserAgent cua = new UserAgent(Stack) { LocalParty = RegisterUA.LocalParty, RemoteParty = new Address(uri) };
+                Useragents.Add(cua);
+                Message invite = cua.CreateRequest("INVITE");
                 invite.InsertHeader(new Header("application/sdp", "Content-Type"));
                 invite.Body= sdp.ToString();
-                CallUA.SendRequest(invite);
+                cua.SendRequest(invite);
             }
             else
             {
@@ -308,26 +318,28 @@ namespace IMS_client
 
         internal void AcceptCall(SDP sdp)
         {
-            Message response = CallUA.CreateResponse(200, "OK");
-            response.InsertHeader(new Header("application/sdp", "Content-Type"));
-            response.Body= sdp.ToString();
-            CallUA.SendResponse(response);
+            //TODO: fix this - find current ua to accept call?
+            //Message response = CallUA.CreateResponse(200, "OK");
+            //response.InsertHeader(new Header("application/sdp", "Content-Type"));
+            //response.Body= sdp.ToString();
+            //CallUA.SendResponse(response);
         }
 
         internal void StopCall(SDP sdp)
         {
-            Message response = CallUA.CreateResponse(200, "OK");
-            response.InsertHeader(new Header("application/sdp", "Content-Type"));
-            response.Body = sdp.ToString();
-            CallUA.SendResponse(response);
+            //Message response = CallUA.CreateResponse(200, "OK");
+            //response.InsertHeader(new Header("application/sdp", "Content-Type"));
+            //response.Body = sdp.ToString();
+            //CallUA.SendResponse(response);
         }
 
         internal void Publish(string sipUri, string basic, string note, int expires)
         {
-            PresenceUA = new UserAgent(Stack) {LocalParty = RegisterUA.LocalParty, RemoteParty = new Address(sipUri)};
-            Message request = PresenceUA.CreateRequest("PUBLISH");
+            UserAgent pua = new UserAgent(Stack) {LocalParty = RegisterUA.LocalParty, RemoteParty = new Address(sipUri)};
+            Useragents.Add(pua);
+            Message request = pua.CreateRequest("PUBLISH");
             request.InsertHeader(new Header("presence", "Event"));
-            request.InsertHeader(new Header(PresenceUA.LocalParty.ToString(), "P-Preferred-Identity"));
+            request.InsertHeader(new Header(pua.LocalParty.ToString(), "P-Preferred-Identity"));
             request.InsertHeader(new Header("application/pidf+xml", "Content-Type"));
             
             StringBuilder sb = new StringBuilder();
@@ -342,7 +354,7 @@ namespace IMS_client
             sb.Append("</presence>\n");
 
             request.Body = sb.ToString();
-            PresenceUA.SendRequest(request);
+            pua.SendRequest(request);
         }
     }
 }

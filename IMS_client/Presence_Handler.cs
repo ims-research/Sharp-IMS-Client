@@ -34,11 +34,11 @@ namespace IMS_client
 
         public void Subscribe(string sipUri)
         {
-            _app.PresenceUA.RemoteParty = new Address(sipUri);
-            _app.PresenceUA.LocalParty = _app.RegisterUA.LocalParty;
-            Message request = _app.PresenceUA.CreateRequest("SUBSCRIBE");
+            UserAgent pua = new UserAgent(this._app.Stack)
+                                {RemoteParty = new Address(sipUri), LocalParty = _app.RegisterUA.LocalParty};
+            Message request = pua.CreateRequest("SUBSCRIBE");
             request.InsertHeader(new Header("presence", "Event"));
-            _app.PresenceUA.SendRequest(request);
+            pua.SendRequest(request);
         }
        
         public void ProcessRequest(Message request)
