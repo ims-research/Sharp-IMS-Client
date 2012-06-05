@@ -836,7 +836,9 @@ namespace IMS_client
             {
                 AddStatusItemHandler handler = AddContactStatusItem;
                 Dispatcher.BeginInvoke(DispatcherPriority.Render, handler, contact);
+                // TODO: Re-enable subscription
                 _presenceHandler.Subscribe(contact.SipUri);
+                return;
             }
         }
 
