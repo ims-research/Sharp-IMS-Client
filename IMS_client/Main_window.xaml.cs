@@ -427,6 +427,7 @@ namespace IMS_client
                         }
                         Message m = e.UA.CreateResponse(200, "OK");
                         e.UA.SendResponse(m);
+                        _presenceHandler.ProcessRequest(request);
                         break;
                     }
                 case "PUBLISH":
@@ -837,7 +838,7 @@ namespace IMS_client
             {
                 AddStatusItemHandler handler = AddContactStatusItem;
                 Dispatcher.BeginInvoke(DispatcherPriority.Render, handler, contact);
-                _presenceHandler.Subscribe(contact.SipUri);
+                //_presenceHandler.Subscribe(contact.SipUri);
                 //TODO: Working on subscription
             }
         }
@@ -847,8 +848,6 @@ namespace IMS_client
         private MenuItem Create_Menu_Item(string tag, string title)
         {
             MenuItem menuItem = new MenuItem {Tag = tag};
-
-
             TextBlock txtBlock = new TextBlock {Text = title};
             menuItem.Header = txtBlock;
             return menuItem;
@@ -868,8 +867,19 @@ namespace IMS_client
             tempMenuItem = Create_Menu_Item(tag, "Send Message");
             tempMenuItem.Click += SendMessageMenuItemClick;
             contextMenu.Items.Add(tempMenuItem);
+
+            tempMenuItem = Create_Menu_Item(tag, "Subscribe to Presence");
+            tempMenuItem.Click += SubscribePresenceMenuItemClick;
+            contextMenu.Items.Add(tempMenuItem);
+
             return contextMenu;
 
+        }
+
+        private void SubscribePresenceMenuItemClick(object sender, RoutedEventArgs e)
+        {
+            MenuItem mi = sender as MenuItem;
+            _presenceHandler.Subscribe(mi.Tag.ToString());
         }
 
         void VoiceCallMenuItemClick(object sender, RoutedEventArgs e)

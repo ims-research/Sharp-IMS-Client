@@ -69,7 +69,10 @@ namespace IMS_client
                             }
                             if (PresenceChangedEvent != null)
                             {
-                                PresenceChangedEvent(this, new PresenceChangedArgs(request.First("From").Value.ToString(), basic, note));
+                                string contact = request.First("From").Value.ToString();
+                                contact = contact.Replace("<","");
+                                contact = contact.Replace(">","");
+                                PresenceChangedEvent(this, new PresenceChangedArgs(contact, basic, note));
                             }
                         }
                         catch (Exception exception)
