@@ -4,6 +4,8 @@
 *.class
 *.dll
 !log4net.dll
+!gstreamersharpglue-0.10.dll
+!gstreamer-sharp.dll
 *.exe
 *.o
 *.so
