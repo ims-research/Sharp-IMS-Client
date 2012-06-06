@@ -69,11 +69,11 @@ namespace IMS_client
                 string remotePort = ((IPEndPoint)sendEP).Port.ToString();
                 if (RawRecvEvent != null)
                 {
-                    RawRecvEvent(this, new RawEventArgs(data, new[] { remoteHost, remotePort }));
+                    RawRecvEvent(this, new RawEventArgs(data, new[] { remoteHost, remotePort },false));
                 }
                 if (ReceivedDataEvent != null)
                 {
-                    ReceivedDataEvent(this, new RawEventArgs(data, s: new[] { remoteHost, remotePort }));
+                    ReceivedDataEvent(this, new RawEventArgs(data,new[] { remoteHost, remotePort },false));
                 }
                 Transport.Socket.BeginReceiveFrom(TempBuffer, 0, TempBuffer.Length, SocketFlags.None, ref sendEP, ReceiveDataCB, sendEP);
             }
@@ -98,7 +98,7 @@ namespace IMS_client
             stack.Transport.Socket.BeginSendTo(sendData, 0, sendData.Length, SocketFlags.None, destEP, SendDataCB, destEP);
             if (RawSentEvent != null)
             {
-                RawSentEvent(this, new RawEventArgs(data, new[] { remoteHost, remotePort }));
+                RawSentEvent(this, new RawEventArgs(data, new[] { remoteHost, remotePort },true));
             }
             if (SipSentEvent != null)
             {
@@ -355,6 +355,20 @@ namespace IMS_client
 
             request.Body = sb.ToString();
             pua.SendRequest(request);
+        }
+
+        public void Deregister(string uri)
+        {
+            if (RegEvent != null)
+            {
+                RegEvent(this, new RegistrationChangedEventArgs("Deregistering", null));
+            }
+                //RegisterUA = new UserAgent(Stack);
+                Message registerMsg = RegisterUA.CreateRegister(new SIPURI(uri));
+                registerMsg.InsertHeader(new Header("0", "Expires"));
+                registerMsg.InsertHeader(new Header(RegisterUA.LocalParty.ToString(), "P-Preferred-Identity"));
+                RegisterUA.SendRequest(registerMsg);
+            
         }
     }
 }

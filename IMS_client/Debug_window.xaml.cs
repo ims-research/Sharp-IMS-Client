@@ -3,6 +3,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Net;
+using System.Windows.Media;
 
 namespace IMS_client
 {
@@ -34,25 +35,30 @@ namespace IMS_client
             }
         }
 
-        public void AddSipResponseMessage(int statusCode, string message)
+        public void AddSipResponseMessage(int statusCode, string message, bool sent)
         {
-            ListBoxItem lbi = new ListBoxItem {Content = statusCode.ToString(), Tag = message, ToolTip = message};
+            ListBoxItem lbi = new ListBoxItem { Content = statusCode.ToString(), Tag = message, ToolTip = message, Background = GetBrushColor(sent) };
             Debug_sip_msg_listbox.Items.Add(lbi);
         }
 
-        public void AddRawMessage(string data)
+        public void AddRawMessage(string data,bool sent)
         {
-            if (data.Length > 0)
+            if (data.Trim().Length > 0)
             {
-                int min = Math.Min(data.Length, 3);
-                ListBoxItem lbi = new ListBoxItem {Content = data.Substring(0, min) + "...", Tag = data, ToolTip = data};
+                int min = Math.Min(data.Length, 20);
+                ListBoxItem lbi = new ListBoxItem { Content = data.Substring(0, min) + "...", Tag = data, ToolTip = data, Background = GetBrushColor(sent) };
                 Raw_msg_listbox.Items.Add(lbi);
             }
         }
 
-        public void AddSipRequestMessage(string method, string message)
+        private Brush GetBrushColor(bool sent)
         {
-            ListBoxItem lbi = new ListBoxItem {Content = method, Tag = message, ToolTip = message};
+            return sent ? Brushes.LightBlue : Brushes.BurlyWood;
+        }
+
+        public void AddSipRequestMessage(string method, string message, bool sent)
+        {
+            ListBoxItem lbi = new ListBoxItem { Content = method, Tag = message, ToolTip = message, Background = GetBrushColor(sent) };
             Debug_sip_msg_listbox.Items.Add(lbi);
         }
 

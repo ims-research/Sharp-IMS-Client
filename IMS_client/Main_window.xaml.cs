@@ -126,13 +126,13 @@ namespace IMS_client
         void StackRawSentEvent(object sender, RawEventArgs eventHolder)
         {
             AddRawMessageHandler messageHandler = _myDebugWindow.AddRawMessage;
-            Dispatcher.BeginInvoke(DispatcherPriority.Render, messageHandler, eventHolder.Data);
+            Dispatcher.BeginInvoke(DispatcherPriority.Render, messageHandler, eventHolder.Data,eventHolder.Sent);
         }
 
         void StackRawRecvEvent(object sender, RawEventArgs eventHolder)
         {
            AddRawMessageHandler messageHandler = _myDebugWindow.AddRawMessage;
-           Dispatcher.BeginInvoke(DispatcherPriority.Render, messageHandler, eventHolder.Data);
+           Dispatcher.BeginInvoke(DispatcherPriority.Render, messageHandler, eventHolder.Data,eventHolder.Sent);
         }
 
         private void LoadAddressBook()
@@ -219,12 +219,12 @@ namespace IMS_client
             {
 
                 AddSipRequestMessageHandler messageHandler = _myDebugWindow.AddSipRequestMessage;
-                Dispatcher.BeginInvoke(DispatcherPriority.Render, messageHandler, e.Message.Method, e.Message.ToString());
+                Dispatcher.BeginInvoke(DispatcherPriority.Render, messageHandler, e.Message.Method, e.Message.ToString(),true);
             }
             else
             {
                 AddSipResponseMessageHandler messageHandler = _myDebugWindow.AddSipResponseMessage;
-                Dispatcher.BeginInvoke(DispatcherPriority.Render, messageHandler, e.Message.ResponseCode, e.Message.ToString());
+                Dispatcher.BeginInvoke(DispatcherPriority.Render, messageHandler, e.Message.ResponseCode, e.Message.ToString(),true);
 
             }
         }
@@ -254,7 +254,7 @@ namespace IMS_client
         void StackResponseRecvEvent(object sender, SipMessageEventArgs e)
         {
             AddSipResponseMessageHandler messageHandler = _myDebugWindow.AddSipResponseMessage;
-            Dispatcher.BeginInvoke(DispatcherPriority.Render, messageHandler, e.Message.ResponseCode, e.Message.ToString());
+            Dispatcher.BeginInvoke(DispatcherPriority.Render, messageHandler, e.Message.ResponseCode, e.Message.ToString(),false);
 
             Message response = e.Message;
 
@@ -368,7 +368,7 @@ namespace IMS_client
         void StackRequestRecvEvent(object sender, SipMessageEventArgs e)
         {
             AddSipRequestMessageHandler messageHandler = _myDebugWindow.AddSipRequestMessage;
-            Dispatcher.BeginInvoke(DispatcherPriority.Render, messageHandler, e.Message.Method, e.Message.ToString());
+            Dispatcher.BeginInvoke(DispatcherPriority.Render, messageHandler, e.Message.Method, e.Message.ToString(),false);
             Message request = e.Message;
             switch (request.Method.ToUpper())
             {
@@ -694,10 +694,10 @@ namespace IMS_client
             Dispatcher.BeginInvoke(DispatcherPriority.Render, messageHandler, e.Type, e.Message);
         }
 
-        delegate void AddSipResponseMessageHandler(int code, string message);
-        delegate void AddSipRequestMessageHandler(string method, string message);
+        delegate void AddSipResponseMessageHandler(int code, string message, bool sent);
+        delegate void AddSipRequestMessageHandler(string method, string message,bool sent);
 
-        delegate void AddRawMessageHandler(string message);
+        delegate void AddRawMessageHandler(string message,bool sent);
 
 
         delegate void AddHttpResponseMessageHandler(HttpWebResponseEventArgs response);
@@ -807,21 +807,14 @@ namespace IMS_client
 
         private void DeregisterClick(object sender, RoutedEventArgs e)
         {
-            //TODO Handle Deregistration
-            //if (sip_stack.registration != null)
-            //{
-            //    string current_state = sip_stack.registration.current_state;
-            //    if (current_state.ToUpper().Equals("REGISTERED") ||
-            //        current_state.ToUpper().Equals("REGISTERING"))
-            //    {
-            //        sip_stack.Deregister();
-
-            //        if (settings.presence_enabled)
-            //        {
-            //            presence_handler.Publish(settings.ims_public_user_identity, "closed", "Offline", 3600);
-            //        }
-            //    }
-            //}
+            if (_app.RegState.ToLower().Contains("registered")|| _app.RegState.ToLower().Contains("Registering"))
+            {
+                _app.Deregister(_settings.ims_public_user_identity);
+                if (_settings.presence_enabled)
+                {
+                    //_presenceHandler.Publish(_settings.ims_public_user_identity, "closed", "Offline", 3600);
+                }
+            }
         }
 
         #endregion
@@ -839,7 +832,6 @@ namespace IMS_client
                 AddStatusItemHandler handler = AddContactStatusItem;
                 Dispatcher.BeginInvoke(DispatcherPriority.Render, handler, contact);
                 //_presenceHandler.Subscribe(contact.SipUri);
-                //TODO: Working on subscription
             }
         }
 
