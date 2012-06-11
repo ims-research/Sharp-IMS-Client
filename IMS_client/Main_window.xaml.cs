@@ -246,6 +246,7 @@ namespace IMS_client
                 if (_settings.presence_enabled)
                 {
                     _presenceHandler.Publish(_settings.ims_public_user_identity, "open", "Available", 3600);
+                    Thread.Sleep(1000);
                     RetrieveStatusOfContacts();
                 }
             }
@@ -812,7 +813,7 @@ namespace IMS_client
                 _app.Deregister(_settings.ims_public_user_identity);
                 if (_settings.presence_enabled)
                 {
-                    //_presenceHandler.Publish(_settings.ims_public_user_identity, "closed", "Offline", 3600);
+                    _presenceHandler.Publish(_settings.ims_public_user_identity, "closed", "Offline", 3600);
                 }
             }
         }
@@ -823,7 +824,7 @@ namespace IMS_client
 
         private void RetrieveStatusOfContacts()
         {
-            Status_ListBox.Dispatcher.Invoke(
+          Status_ListBox.Dispatcher.Invoke(
           DispatcherPriority.Normal,
           new Action(
               () => Status_ListBox.Items.Clear()));
@@ -831,7 +832,8 @@ namespace IMS_client
             {
                 AddStatusItemHandler handler = AddContactStatusItem;
                 Dispatcher.BeginInvoke(DispatcherPriority.Render, handler, contact);
-                //_presenceHandler.Subscribe(contact.SipUri);
+                _presenceHandler.Subscribe(contact.SipUri);
+                // TODO: Automatically subscribe to contact status;
             }
         }
 

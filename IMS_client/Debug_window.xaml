@@ -22,6 +22,8 @@
             </Grid>
         </TabItem>
         <TabItem Header="Raw Data">
+            <DockPanel HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Height="Auto">
+                <TextBox Name="RawMsgSearchBox" TextChanged="RawMsgSearchBoxTextChanged" DockPanel.Dock="Top" Height="20"></TextBox>
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"></ColumnDefinition>
@@ -34,8 +36,10 @@
                     <ListBox  Name="Raw_msg_listbox" SelectionChanged="RawMsgListboxSelectionChanged">
                     </ListBox>
                 </DockPanel>
-                <TextBox TextWrapping="Wrap" Grid.Column="1" Background="Transparent" Name="Raw_msg_textbox"></TextBox>
+                    <RichTextBox Grid.Column="1" Background="Transparent" Name="Raw_msg_textbox"></RichTextBox>
+                
             </Grid>
+            </DockPanel>
         </TabItem>
         <TabItem Header="HTTP/XCAP Messages">
             <Grid >

@@ -363,7 +363,6 @@ namespace IMS_client
             {
                 RegEvent(this, new RegistrationChangedEventArgs("Deregistering", null));
             }
-                //RegisterUA = new UserAgent(Stack);
                 Message registerMsg = RegisterUA.CreateRegister(new SIPURI(uri));
                 registerMsg.InsertHeader(new Header("0", "Expires"));
                 registerMsg.InsertHeader(new Header(RegisterUA.LocalParty.ToString(), "P-Preferred-Identity"));

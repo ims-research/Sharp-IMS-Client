@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Net;
+using System.Windows.Documents;
 using System.Windows.Media;
 
 namespace IMS_client
@@ -45,8 +47,11 @@ namespace IMS_client
         {
             if (data.Trim().Length > 0)
             {
-                int min = Math.Min(data.Length, 20);
-                ListBoxItem lbi = new ListBoxItem { Content = data.Substring(0, min) + "...", Tag = data, ToolTip = data, Background = GetBrushColor(sent) };
+
+                int min = Math.Min(20, data.IndexOf("\r"));
+                string dots = "";
+                if (min == 20) dots = "...";
+                ListBoxItem lbi = new ListBoxItem { Content = data.Substring(0, min) + dots, Tag = data, ToolTip = data, Background = GetBrushColor(sent) };
                 Raw_msg_listbox.Items.Add(lbi);
             }
         }
@@ -105,12 +110,67 @@ namespace IMS_client
 
         private void RawMsgListboxSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            Raw_msg_textbox.Clear();
+            Raw_msg_textbox.Document.Blocks.Clear();
             if (Raw_msg_listbox.SelectedItem as ListBoxItem != null)
             {
-                Raw_msg_textbox.Text = (Raw_msg_listbox.SelectedItem as ListBoxItem).Tag.ToString();
+                FlowDocument flow = new FlowDocument();
+                Paragraph para = new Paragraph();
+                para.Inlines.Add(new Run((Raw_msg_listbox.SelectedItem as ListBoxItem).Tag.ToString()));
+                flow.Blocks.Add(para);
+                Raw_msg_textbox.Document = flow;
+                HighlightFoundTerm(RawMsgSearchBox.Text, Raw_msg_textbox);
             }
 
+        }
+
+        private void HighlightFoundTerm(string searchTerm, RichTextBox rawMsgTextbox)
+        {
+            List<TextRange> myRanges = FindWordFromPosition(rawMsgTextbox.Document.ContentStart, searchTerm);
+            if (myRanges.Count > 0)
+            {
+                foreach (TextRange textRange in myRanges)
+                {
+                    textRange.ApplyPropertyValue(TextElement.BackgroundProperty, new SolidColorBrush(Colors.Yellow));
+                    textRange.ApplyPropertyValue(TextElement.FontWeightProperty, FontWeights.Bold);
+                }
+            }
+        }
+
+        List<TextRange> FindWordFromPosition(TextPointer position, string word)
+        {
+            List<TextRange> ranges = new List<TextRange>();
+            while (position != null)
+            {
+                if (position.GetPointerContext(LogicalDirection.Forward) == TextPointerContext.Text)
+                {
+                    string textRun = position.GetTextInRun(LogicalDirection.Forward);
+
+                    // Find the starting index of any substring that matches "word".
+                    int indexInRun = textRun.IndexOf(word);
+                    if (indexInRun >= 0)
+                    {
+                        TextPointer start = position.GetPositionAtOffset(indexInRun);
+                        TextPointer end = start.GetPositionAtOffset(word.Length);
+                        ranges.Add(new TextRange(start, end));
+                    }
+                }
+                position = position.GetNextContextPosition(LogicalDirection.Forward);
+            }
+            return ranges;
+        }
+
+        private void RawMsgSearchBoxTextChanged(object sender, TextChangedEventArgs e)
+        {
+            Raw_msg_textbox.Document.Blocks.Clear();
+            if (Raw_msg_listbox.SelectedItem as ListBoxItem != null)
+            {
+                FlowDocument flow = new FlowDocument();
+                Paragraph para = new Paragraph();
+                para.Inlines.Add(new Run((Raw_msg_listbox.SelectedItem as ListBoxItem).Tag.ToString()));
+                flow.Blocks.Add(para);
+                Raw_msg_textbox.Document = flow;
+                HighlightFoundTerm(RawMsgSearchBox.Text, Raw_msg_textbox);
+            }
         }
     }
 }
