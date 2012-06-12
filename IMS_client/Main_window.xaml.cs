@@ -246,7 +246,6 @@ namespace IMS_client
                 if (_settings.presence_enabled)
                 {
                     _presenceHandler.Publish(_settings.ims_public_user_identity, "open", "Available", 3600);
-                    Thread.Sleep(1000);
                     RetrieveStatusOfContacts();
                 }
             }
@@ -832,12 +831,25 @@ namespace IMS_client
             {
                 AddStatusItemHandler handler = AddContactStatusItem;
                 Dispatcher.BeginInvoke(DispatcherPriority.Render, handler, contact);
-                _presenceHandler.Subscribe(contact.SipUri);
+                // TODO: Automatically subscribe to contact status;
+            }
+            foreach (Contact contact in _addressBook.Entries)
+            {
+                SubscribeToStatusHandler handler = SubscribeToStatus;
+                Dispatcher.BeginInvoke(DispatcherPriority.Background, handler, contact);
                 // TODO: Automatically subscribe to contact status;
             }
         }
 
+        private void SubscribeToStatus(Contact contact)
+        {
+            Thread.Sleep(0);
+            _presenceHandler.Subscribe(contact.SipUri);
+            Thread.Sleep(0);
+        }
+
         delegate void AddStatusItemHandler(Contact contact);
+        delegate void SubscribeToStatusHandler(Contact contact);
 
         private MenuItem Create_Menu_Item(string tag, string title)
         {

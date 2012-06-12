@@ -34,7 +34,7 @@ namespace IMS_client
 
         public void Subscribe(string sipUri)
         {
-            UserAgent pua = new UserAgent(this._app.Stack)
+            UserAgent pua = new UserAgent(_app.Stack)
                                 {RemoteParty = new Address(sipUri), LocalParty = _app.RegisterUA.LocalParty};
             Message request = pua.CreateRequest("SUBSCRIBE");
             request.InsertHeader(new Header("presence", "Event"));
