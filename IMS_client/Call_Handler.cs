@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Text;
 using SIPLib.SIP;
-using SIPLib.utils;
+using SIPLib.Utils;
 
 namespace IMS_client
 {
@@ -99,7 +99,7 @@ namespace IMS_client
                 }
 
                 SDP sdp = new SDP(GenerateSDP(videoEnabled, _localAudioPort, _localVideoPort));
-                _app.AcceptCall(sdp);
+                _app.AcceptCall(sdp,IncomingCall);
 
                 InCall = true;
                 CallState = CallState.Active;
@@ -110,7 +110,7 @@ namespace IMS_client
                 if (videoEnabled)
                 {
                     _mediaHandler.StartVideoTx(remoteIP, _remoteVideoPort);
-                    _mediaHandler.StartVideoRx(_settings.videocall_local_port, Utils.Unquote(IncomingCall.First("From").ToString()));
+                    _mediaHandler.StartVideoRx(_settings.videocall_local_port, Helpers.Unquote(IncomingCall.First("From").ToString()));
                 }
 
 
@@ -159,7 +159,7 @@ namespace IMS_client
                     _mediaHandler.StartAudioTx(remoteIP, _remoteAudioPort, 8);
                     if (videoEnabled)
                     {
-                        _mediaHandler.StartVideoRx(_settings.videocall_local_port, Utils.Unquote(_outgoingInvite.First("To").ToString()));
+                        _mediaHandler.StartVideoRx(_settings.videocall_local_port, Helpers.Unquote(_outgoingInvite.First("To").ToString()));
                         _mediaHandler.StartVideoTx(remoteIP, _remoteVideoPort);
                     }
 

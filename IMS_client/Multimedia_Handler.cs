@@ -386,7 +386,10 @@ namespace IMS_client
 
         internal void StopLoop()
         {
-            if (_loop != null) _loop.Quit();
+            //if (_loop != null)
+            //{
+            //    _loop.Quit();
+            //}
         }
     }
 }

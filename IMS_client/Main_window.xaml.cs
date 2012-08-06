@@ -17,7 +17,7 @@ using System.Net.Sockets;
 using System.Globalization;
 using System.Threading;
 using SIPLib.SIP;
-using SIPLib.utils;
+using SIPLib.Utils;
 using log4net;
 
 namespace IMS_client
@@ -215,7 +215,7 @@ namespace IMS_client
 
         void StackSipSentEvent(object sender, SipMessageEventArgs e)
         {
-            if (Utils.IsRequest(e.Message))
+            if (Helpers.IsRequest(e.Message))
             {
 
                 AddSipRequestMessageHandler messageHandler = _myDebugWindow.AddSipRequestMessage;
@@ -343,7 +343,14 @@ namespace IMS_client
             }
             else if (response.StatusCodeType == StatusCodes.Unknown)
             {
-                MessageBox.Show("Unkown Status Code Type received");
+                if (response.ResponseCode == 503)
+                {
+                    MessageBox.Show(response.ResponseText);
+                }
+                else
+                {
+                    MessageBox.Show("Unkown Status Code Type received");
+                }
             }
         }
 
@@ -378,7 +385,8 @@ namespace IMS_client
                         UpdateStatusText("Incoming Call");
                         _callHandler.SetState(CallState.Ringing);
                         _callHandler.IncomingCall = request;
-                        _callHandler.UA = e.UA;
+                        _app.Useragents.Add(e.UA);
+                        //_callHandler.UA = e.UA;
                         break;
                     }
                 case "CANCEL":
@@ -732,6 +740,7 @@ namespace IMS_client
             //    }
             //    sip_stack.Stop();
             //}
+            Application.Current.Shutdown();
         }
 
         void SettingsWindowClosed(object sender, EventArgs e)
@@ -843,9 +852,7 @@ namespace IMS_client
 
         private void SubscribeToStatus(Contact contact)
         {
-            Thread.Sleep(0);
             _presenceHandler.Subscribe(contact.SipUri);
-            Thread.Sleep(0);
         }
 
         delegate void AddStatusItemHandler(Contact contact);
@@ -1005,14 +1012,14 @@ namespace IMS_client
         delegate void AddMsgToConvHandler(string contact, string message);
         private void AddMsgToConversation(string contact, string message)
         {
-            if (!MessageTabExists(contact))
+            if (!MessageTabExists(Helpers.RemoveAngelBrackets(contact)))
             {
                 CreateMessageTab(contact);
             }
 
             foreach (TabItem tabItem in _myIMWindow.IM_TabControl.Items)
             {
-                if (tabItem.Tag.ToString() != contact) continue;
+                if (tabItem.Tag.ToString() != Helpers.RemoveAngelBrackets(contact)) continue;
                 DockPanel dockPanel = tabItem.Content as DockPanel;
 
                 if (dockPanel != null)
@@ -1027,7 +1034,10 @@ namespace IMS_client
 
                 Paragraph para = new Paragraph();
                 Span username = new Span {Foreground = Brushes.Red};
-                username.Inlines.Add(CultureInfo.CurrentCulture.TextInfo.ToTitleCase(contact.Substring(4, contact.IndexOf('@') - 4)) + ": ");
+                string name = Helpers.RemoveAngelBrackets(contact);
+                name = name.Substring(4, name.IndexOf('@') - 4);
+                name = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(name);
+                username.Inlines.Add(name + ": ");
 
                 para.Inlines.Add(username);
 
@@ -1049,6 +1059,7 @@ namespace IMS_client
         }
 
         delegate void UpdateIMMessageStatusHandler(string contact, string status);
+        
         private void UpdateIMMessageStatus(string contact, string status)
         {
             foreach (TabItem tabItem in _myIMWindow.IM_TabControl.Items)
@@ -1061,7 +1072,12 @@ namespace IMS_client
                     {
                         Label statusLabel = dockPanel.Children[1] as Label;
                         if (statusLabel != null)
-                            statusLabel.Content = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(contact.Substring(4, contact.IndexOf('@') - 4)) + " is typing";
+                        {
+                            string name = Helpers.RemoveAngelBrackets(contact);
+                            name = name.Substring(4, name.IndexOf('@') - 4);
+                            name = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(name);
+                            statusLabel.Content = name + " is typing";
+                        }
                     }
                 }
             }
@@ -1107,7 +1123,7 @@ namespace IMS_client
                                               Height = 30
                                           };
             imageButton.Click += SendIMButtonClicked;
-            imageButton.Tag = uri;
+            imageButton.Tag = Helpers.RemoveAngelBrackets(uri);
 
             conversationBox.VerticalAlignment = VerticalAlignment.Stretch;
             conversationBox.HorizontalAlignment = HorizontalAlignment.Stretch;
@@ -1138,9 +1154,12 @@ namespace IMS_client
             overallDockPanel.Children.Add(conversationBox);
 
             tabItem.Content = overallDockPanel;
-            tabItem.Header = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(uri.Substring(4, uri.IndexOf('@') - 4));
+            string name = Helpers.RemoveAngelBrackets(uri);
+            name = name.Substring(4, name.IndexOf('@') - 4);
+            name = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(name);
+            tabItem.Header = name;
 
-            tabItem.Tag = uri;
+            tabItem.Tag = Helpers.RemoveAngelBrackets(uri);
 
             _myIMWindow.IM_TabControl.Items.Add(tabItem);
         }
@@ -1148,7 +1167,7 @@ namespace IMS_client
         void SendIMTextChanged(object sender, TextChangedEventArgs e)
         {
             TextBox textBox = sender as TextBox;
-            if (textBox != null && textBox.Text != "")
+            if (textBox != null && textBox.Text != "" && textBox.Text.Length > 5)
             {
                 _imHandler.SendTypingNotice(textBox.Tag.ToString());
             }
@@ -1200,7 +1219,10 @@ namespace IMS_client
 
                                 Paragraph para = new Paragraph();
                                 Span username = new Span {Foreground = Brushes.Green};
-                                username.Inlines.Add(CultureInfo.CurrentCulture.TextInfo.ToTitleCase(_settings.ims_public_user_identity.Substring(4, _settings.ims_public_user_identity.IndexOf('@') - 4)) + ": ");
+                                string name = Helpers.RemoveAngelBrackets(_settings.ims_public_user_identity);
+                                name = name.Substring(4, name.IndexOf('@') - 4);
+                                name = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(name);
+                                username.Inlines.Add(name + ": ");
             
                                 para.Inlines.Add(username);
 
