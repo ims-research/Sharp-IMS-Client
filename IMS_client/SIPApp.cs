@@ -67,14 +67,17 @@ namespace IMS_client
                 string data = Encoding.ASCII.GetString(TempBuffer, 0, bytesRead);
                 string remoteHost = ((IPEndPoint)sendEP).Address.ToString();
                 string remotePort = ((IPEndPoint)sendEP).Port.ToString();
-                if (RawRecvEvent != null)
+                System.Threading.ThreadPool.QueueUserWorkItem(delegate
                 {
-                    RawRecvEvent(this, new RawEventArgs(data, new[] { remoteHost, remotePort },false));
-                }
-                if (ReceivedDataEvent != null)
-                {
-                    ReceivedDataEvent(this, new RawEventArgs(data,new[] { remoteHost, remotePort },false));
-                }
+                    if (RawRecvEvent != null)
+                    {
+                        RawRecvEvent(this, new RawEventArgs(data, new[] { remoteHost, remotePort }, false));
+                    }
+                    if (ReceivedDataEvent != null)
+                    {
+                        ReceivedDataEvent(this, new RawEventArgs(data, new[] { remoteHost, remotePort }, false));
+                    }
+                }, null);
                 Transport.Socket.BeginReceiveFrom(TempBuffer, 0, TempBuffer.Length, SocketFlags.None, ref sendEP, ReceiveDataCB, sendEP);
             }
             catch (Exception ex)
@@ -96,14 +99,18 @@ namespace IMS_client
             string remotePort = ((IPEndPoint)destEP).Port.ToString();
 
             stack.Transport.Socket.BeginSendTo(sendData, 0, sendData.Length, SocketFlags.None, destEP, SendDataCB, destEP);
-            if (RawSentEvent != null)
+
+            System.Threading.ThreadPool.QueueUserWorkItem(delegate
             {
-                RawSentEvent(this, new RawEventArgs(data, new[] { remoteHost, remotePort },true));
-            }
-            if (SipSentEvent != null)
-            {
-                SipSentEvent(this, new SipMessageEventArgs(new Message(data)));
-            }
+                if (RawSentEvent != null)
+                {
+                    RawSentEvent(this, new RawEventArgs(data, new[] { remoteHost, remotePort }, true));
+                }
+                if (SipSentEvent != null)
+                {
+                    SipSentEvent(this, new SipMessageEventArgs(new Message(data)));
+                };
+            }, null);
         }
 
         private void SendDataCB(IAsyncResult asyncResult)
@@ -207,7 +214,7 @@ namespace IMS_client
                 UserAgent mua = new UserAgent(Stack) {LocalParty = RegisterUA.LocalParty, RemoteParty = new Address(uri)};
                 Useragents.Add(mua);
                 Message m = mua.CreateRequest("MESSAGE", message);
-                m.InsertHeader(new Header("", "Content-Type"));
+                m.InsertHeader(new Header(contentType, "Content-Type"));
                 mua.SendRequest(m);
             }
         }

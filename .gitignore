@@ -46,6 +46,9 @@ Thumbs.db
 *.aps
 *.suo
 *.cache
+*.vsp
+*.psess
+*DotSettings.user
 *FileListAbsolute*.txt
 
 # Build Folders (you can keep bin if you'd like, to store dlls and pdbs)
@@ -54,3 +57,5 @@ obj
 
 # mstest test results
 TestResults
+
+_ReSharper.IMS_client
