@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Text;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using SIPLib.SIP;
-using SIPLib.utils;
+using SIPLib.Utils;
 using log4net;
+using Timer = SIPLib.SIP.Timer;
 
 namespace IMS_client
 {
@@ -71,10 +73,15 @@ namespace IMS_client
                 {
                     RawRecvEvent(this, new RawEventArgs(data, new[] { remoteHost, remotePort },false));
                 }
-                if (ReceivedDataEvent != null)
+                Thread myThread = new System.Threading.Thread(delegate()
                 {
-                    ReceivedDataEvent(this, new RawEventArgs(data,new[] { remoteHost, remotePort },false));
-                }
+                    if (ReceivedDataEvent != null)
+                    {
+                        ReceivedDataEvent(this, new RawEventArgs(data, new[] { remoteHost, remotePort }, false));
+                    }
+                });
+                myThread.Start();
+                
                 Transport.Socket.BeginReceiveFrom(TempBuffer, 0, TempBuffer.Length, SocketFlags.None, ref sendEP, ReceiveDataCB, sendEP);
             }
             catch (Exception ex)
@@ -133,7 +140,7 @@ namespace IMS_client
 
         public override void Sending(UserAgent ua, Message message, SIPStack stack)
         {
-            if (Utils.IsRequest(message))
+            if (Helpers.IsRequest(message))
             {
                 Log.Info("Sending request with method " + message.Method);
             }
@@ -207,7 +214,7 @@ namespace IMS_client
                 UserAgent mua = new UserAgent(Stack) {LocalParty = RegisterUA.LocalParty, RemoteParty = new Address(uri)};
                 Useragents.Add(mua);
                 Message m = mua.CreateRequest("MESSAGE", message);
-                m.InsertHeader(new Header("", "Content-Type"));
+                m.InsertHeader(new Header(contentType, "Content-Type"));
                 mua.SendRequest(m);
             }
         }
@@ -316,13 +323,22 @@ namespace IMS_client
             }
         }
 
-        internal void AcceptCall(SDP sdp)
+        internal void AcceptCall(SDP sdp,Message IncomingCall)
         {
             //TODO: fix this - find current ua to accept call?
-            //Message response = CallUA.CreateResponse(200, "OK");
-            //response.InsertHeader(new Header("application/sdp", "Content-Type"));
-            //response.Body= sdp.ToString();
-            //CallUA.SendResponse(response);
+            foreach (UserAgent userAgent in Useragents)
+            {
+                if (userAgent.CallID == IncomingCall.First("Call-ID").Value.ToString())
+                {
+
+                }
+            }
+            UserAgent CallUA = new UserAgent(this.Stack);
+            Message response = CallUA.CreateResponse(200, "OK");
+            response.InsertHeader(new Header("application/sdp", "Content-Type"));
+            response.Body= sdp.ToString();
+            CallUA.SendResponse(response);
+            Useragents.Add(CallUA);
         }
 
         internal void StopCall(SDP sdp)
