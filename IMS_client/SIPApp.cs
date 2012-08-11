@@ -30,6 +30,7 @@ namespace IMS_client
         //public UserAgent PresenceUA { get; set; }
 
         public List<UserAgent> Useragents { get; set; }
+        private Dialog CurrentCallUA { get; set; }
 
         public event EventHandler<RawEventArgs> RawRecvEvent;
         public event EventHandler<RawEventArgs> RawSentEvent;
@@ -225,32 +226,28 @@ namespace IMS_client
         {
             if (IsRegistered())
             {
-                // TODO: End current call - lookup ua? 
-                //if (CallUA != null)
-                //{
-                //    try
-                //    {
-                //        Dialog d = (Dialog)CallUA;
-                //        Message bye = d.CreateRequest("BYE");
-                //        d.SendRequest(bye);
-                //    }
-                //    catch (InvalidCastException e)
-                //    {
-                //        Log.Error("Error ending current call, Dialog Does not Exist ?", e);
-                //    }
-
-                //}
-                //else
-                //{
-                //    Log.Error("Call UA does not exist, not sending CANCEL message");
-                //}
-
+                if (CurrentCallUA != null)
+                {
+                    try
+                    {
+                    Dialog d = (Dialog)CurrentCallUA;    
+                    Message bye = d.CreateRequest("BYE");
+                    d.SendRequest(bye);
+                    }
+                    catch (InvalidCastException e)
+                    {
+                        Log.Error("Error ending current call, Dialog Does not Exist ?", e);
+                    }
+                }
+                else
+                {
+                    Log.Error("Call UA does not exist, not sending CANCEL message");
+                }
             }
             else
             {
                 Log.Error("Not registered, not sending CANCEL message");
             }
-
         }
 
         private string checkURI(string uri)
@@ -328,19 +325,17 @@ namespace IMS_client
         internal void AcceptCall(SDP sdp,Message IncomingCall)
         {
             //TODO: fix this - find current ua to accept call?
-            foreach (UserAgent userAgent in Useragents)
+            foreach (UserAgent userAgent in Useragents.ToArray())
             {
                 if (userAgent.CallID == IncomingCall.First("Call-ID").Value.ToString())
                 {
-
+                    Message response = userAgent.CreateResponse(200, "OK");
+                    response.InsertHeader(new Header("application/sdp", "Content-Type"));
+                    response.Body = sdp.ToString();
+                    userAgent.SendResponse(response);
+                    CurrentCallUA = (Dialog)userAgent;
                 }
             }
-            UserAgent CallUA = new UserAgent(this.Stack);
-            Message response = CallUA.CreateResponse(200, "OK");
-            response.InsertHeader(new Header("application/sdp", "Content-Type"));
-            response.Body= sdp.ToString();
-            CallUA.SendResponse(response);
-            Useragents.Add(CallUA);
         }
 
         internal void StopCall(SDP sdp)
