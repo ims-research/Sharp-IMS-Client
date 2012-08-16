@@ -306,7 +306,28 @@ namespace IMS_client
                     string temp = response.First("Contact").ToString();
                     if (temp.Contains("expires"))
                     {
-                        int expires = int.Parse(temp.Substring(temp.IndexOf("expires=")+8));
+                        int expires = -1;
+                        try
+                        {
+                            string expire_header = temp.Substring(temp.IndexOf("expires=") + 8);
+                            int expireEndIndex = -1;
+                            expireEndIndex = expire_header.IndexOf(";");
+                            if (expireEndIndex == -1)
+                            {
+                                expires = int.Parse(expire_header);
+                            }
+                            else
+                            {
+                                expires = int.Parse(expire_header.Substring(0, expireEndIndex));
+                            }
+                            
+                        }
+                        catch (Exception)
+                        {
+                            MessageBox.Show("Error finding expire heading on contact header: " + temp);
+                        }
+                        
+
                         if (expires > 0)
                         {
                             this._app.RegState = "Registered";
@@ -317,6 +338,10 @@ namespace IMS_client
                             this._app.RegState = "Deregistered";
                             StackRegEvent(this, new RegistrationChangedEventArgs("Deregistered", response));
                        }
+                        else if (expires < 0)
+                        {
+                            MessageBox.Show("Error expires is negative: " + expires);
+                        }
                     }
                 }
                 //TODO Handle INVITE
