@@ -30,7 +30,7 @@ namespace IMS_client
         //public UserAgent PresenceUA { get; set; }
 
         public List<UserAgent> Useragents { get; set; }
-        private Dialog CurrentCallUA { get; set; }
+        private string CurrentCallID { get; set; }
 
         public event EventHandler<RawEventArgs> RawRecvEvent;
         public event EventHandler<RawEventArgs> RawSentEvent;
@@ -226,18 +226,16 @@ namespace IMS_client
         {
             if (IsRegistered())
             {
-                if (CurrentCallUA != null)
+                if (!String.IsNullOrEmpty(CurrentCallID))
                 {
-                    try
-                    {
-                    Dialog d = (Dialog)CurrentCallUA;    
-                    Message bye = d.CreateRequest("BYE");
-                    d.SendRequest(bye);
-                    }
-                    catch (InvalidCastException e)
-                    {
-                        Log.Error("Error ending current call, Dialog Does not Exist ?", e);
-                    }
+                        foreach (UserAgent userAgent in Useragents)
+                        {
+                            if (userAgent.CallID == CurrentCallID)
+                            {
+                                Message bye = userAgent.CreateRequest("BYE");
+                                userAgent.SendRequest(bye);
+                            }
+                        }
                 }
                 else
                 {
@@ -333,7 +331,7 @@ namespace IMS_client
                     response.InsertHeader(new Header("application/sdp", "Content-Type"));
                     response.Body = sdp.ToString();
                     userAgent.SendResponse(response);
-                    CurrentCallUA = (Dialog)userAgent;
+                    CurrentCallID = IncomingCall.First("Call-ID").Value.ToString();
                 }
             }
         }
@@ -382,5 +380,7 @@ namespace IMS_client
                 RegisterUA.SendRequest(registerMsg);
             
         }
+
+        
     }
 }
