@@ -239,12 +239,12 @@ namespace IMS_client
                 }
                 else
                 {
-                    Log.Error("Call UA does not exist, not sending CANCEL message");
+                    Log.Error("Call UA does not exist, not sending  BYE message");
                 }
             }
             else
             {
-                Log.Error("Not registered, not sending CANCEL message");
+                Log.Error("Not registered, not sending BYE message");
             }
         }
 

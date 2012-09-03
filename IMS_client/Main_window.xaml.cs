@@ -251,12 +251,72 @@ namespace IMS_client
             }
         }
 
+        void HandleRegisterResponse(Message response)
+        {
+            string temp = response.First("Contact").ToString();
+            if (temp.Contains("expires"))
+            {
+                int expires = -1;
+                try
+                {
+                    string expire_header = temp.Substring(temp.IndexOf("expires=") + 8);
+                    int expireEndIndex = -1;
+                    expireEndIndex = expire_header.IndexOf(";");
+                    if (expireEndIndex == -1)
+                    {
+                        expires = int.Parse(expire_header);
+                    }
+                    else
+                    {
+                        expires = int.Parse(expire_header.Substring(0, expireEndIndex));
+                    }
+
+                }
+                catch (Exception)
+                {
+                    MessageBox.Show("Error finding expire heading on contact header: " + temp);
+                }
+
+
+                if (expires > 0)
+                {
+                    this._app.RegState = "Registered";
+                    StackRegEvent(this, new RegistrationChangedEventArgs("Registered", response));
+                }
+                else if (expires == 0)
+                {
+                    this._app.RegState = "Deregistered";
+                    StackRegEvent(this, new RegistrationChangedEventArgs("Deregistered", response));
+                }
+                else if (expires < 0)
+                {
+                    MessageBox.Show("Error expires is negative: " + expires);
+                }
+            }
+        }
+
         void StackResponseRecvEvent(object sender, SipMessageEventArgs e)
         {
             AddSipResponseMessageHandler messageHandler = _myDebugWindow.AddSipResponseMessage;
             Dispatcher.BeginInvoke(DispatcherPriority.Render, messageHandler, e.Message.ResponseCode, e.Message.ToString(),false);
-
             Message response = e.Message;
+            string requestType = response.First("CSeq").ToString().Trim().Split()[1].ToUpper();
+
+            switch (requestType)
+            {
+                case  "INVITE":
+                    _callHandler.ProcessResponse(response);
+                    break;
+                case "REGISTER":
+                    HandleRegisterResponse(response);
+                    break;
+                case "BYE":
+                    _callHandler.ProcessResponse(response);
+                    break;
+                default:
+                    Log.Info("Response for Request Type " + requestType + " is unhandled ");
+                    break;
+            }
 
             switch (response.ResponseCode)
             {
@@ -279,76 +339,15 @@ namespace IMS_client
                     }
                 default:
                     {
-                        Log.Info("Response code of " + response.ResponseCode + " is unhandled ");
+                        
                     }
                     break;
             }
-
             if (response.StatusCodeType == StatusCodes.Informational)
             {
-                if (response.ResponseCode == 100)
-                {
-                    _callHandler.SetState(CallState.Calling);
-                }
-                else if (response.ResponseCode == 180)
-                {
-                    _callHandler.SetState(CallState.Ringing);
-                }
-                else if (response.ResponseCode == 182)
-                {
-                    _callHandler.SetState(CallState.Queued);
-                }
             }
             else if (response.StatusCodeType == StatusCodes.Successful)
             {
-                if (response.First("CSeq").ToString().ToUpper().Contains("REGISTER"))
-                {
-                    string temp = response.First("Contact").ToString();
-                    if (temp.Contains("expires"))
-                    {
-                        int expires = -1;
-                        try
-                        {
-                            string expire_header = temp.Substring(temp.IndexOf("expires=") + 8);
-                            int expireEndIndex = -1;
-                            expireEndIndex = expire_header.IndexOf(";");
-                            if (expireEndIndex == -1)
-                            {
-                                expires = int.Parse(expire_header);
-                            }
-                            else
-                            {
-                                expires = int.Parse(expire_header.Substring(0, expireEndIndex));
-                            }
-                            
-                        }
-                        catch (Exception)
-                        {
-                            MessageBox.Show("Error finding expire heading on contact header: " + temp);
-                        }
-                        
-
-                        if (expires > 0)
-                        {
-                            this._app.RegState = "Registered";
-                            StackRegEvent(this, new RegistrationChangedEventArgs("Registered", response));
-                        }
-                        else if (expires == 0)
-                        {
-                            this._app.RegState = "Deregistered";
-                            StackRegEvent(this, new RegistrationChangedEventArgs("Deregistered", response));
-                       }
-                        else if (expires < 0)
-                        {
-                            MessageBox.Show("Error expires is negative: " + expires);
-                        }
-                    }
-                }
-                //TODO Handle INVITE
-                //if (response.headers["cseq"].ToUpper().Contains("INVITE"))
-                //{
-                //    call_handler.process_Response(response);
-                //}
             }
             else if (response.StatusCodeType == StatusCodes.Redirection)
             {
@@ -416,7 +415,7 @@ namespace IMS_client
                     }
                 case "CANCEL":
                     {
-                        _callHandler.CancelCall(request);
+                        _callHandler.CancelCall();
                         break;
                     }
                 case "ACK":
@@ -425,6 +424,9 @@ namespace IMS_client
                     }
                 case "BYE":
                     {
+                        Message m = e.UA.CreateResponse(200, "OK");
+                        e.UA.SendResponse(m);
+                        _callHandler.StopCall();
                         break;
                     }
                 case "MESSAGE":
@@ -1519,7 +1521,7 @@ namespace IMS_client
                  DispatcherPriority.Normal,
                  new Action(
                      () => _soundPlayer.Stop()));
-            _callHandler.CancelCall(null);
+            _callHandler.CancelCall();
         }
 
         private void ImageImageFailed(object sender, ExceptionRoutedEventArgs e)

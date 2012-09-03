@@ -119,27 +119,33 @@ namespace IMS_client
             }
         }
 
-        public void ProcessResponse(Message message)
+        public void ProcessResponse(Message response)
         {
             string remoteIP = "not_found";
-
-            if (message.StatusCodeType == StatusCodes.Informational)
+            if (response.StatusCodeType == StatusCodes.Informational)
             {
+                if (response.ResponseCode == 100)
+                {
+                    SetState(CallState.Calling);
+                }
+                else if (response.ResponseCode == 180)
+                {
+                    SetState(CallState.Ringing);
+                }
+                else if (response.ResponseCode == 182)
+                {
+                    SetState(CallState.Queued);
+                }
                
             }
-            else if (message.StatusCodeType == StatusCodes.Successful)
+            else if (response.StatusCodeType == StatusCodes.Successful)
             {
-
                 if ((CallState == CallState.Ringing) || (CallState == CallState.Calling))
                 {
+                    CurrentCallID = response.First("Call-ID").Value.ToString();
                     SetState(CallState.Active);
-
-                    //TODO This should not be needed as the stack should create ACKs
-                    //Message request = stack.CreateAck(outgoing_invite);
-                    //stack.SendMessage(request);
-
                     bool videoEnabled = false;
-                    if (message.Headers.ContainsKey("Content-Type") && message.First("Content-Type").ToString().ToLower().Contains("application/sdp"))
+                    if (response.Headers.ContainsKey("Content-Type") && response.First("Content-Type").ToString().ToLower().Contains("application/sdp"))
                     {
                         SDP remoteSDP = new SDP(IncomingCall.Body);
                         remoteIP = remoteSDP.Connection.Address;
@@ -172,11 +178,10 @@ namespace IMS_client
                 {
                     SetState(CallState.Ended);
                 }
-
             }
-            else if (message.StatusCodeType == StatusCodes.GlobalFailure)
+            else if (response.StatusCodeType == StatusCodes.GlobalFailure)
             {
-                if (message.ResponseCode == 603)
+                if (response.ResponseCode == 603)
                 {
                     SetState(CallState.Ending);
                     IncomingCall = null;
@@ -209,17 +214,25 @@ namespace IMS_client
 
         internal void StopCall()
         {
+            SetState(CallState.Ending);
+            _app.EndCurrentCall();
+            IncomingCall = null;
+            _outgoingInvite = null;
+            InCall = false;
+
+            // TODO RE-ENABLE media handling
+            //_mediaHandler.StopAudioRx();
+            //_mediaHandler.StopAudioTx();
+            //_mediaHandler.StopVideoRx();
+            //_mediaHandler.StopVideoTx();
+
             //TODO Check ending of call
-            
-            
-            
             //string uri = "";
             //Message temp = null;
             //if (incoming_call !=null)
             //{
             //    temp = incoming_call;
             //    uri = Utils.unquote(outgoing_invite.first("From").ToString());
-               
             //}
             //else if (outgoing_invite != null)
             //{
@@ -230,56 +243,17 @@ namespace IMS_client
             //request.method = "BYE";
             //request.uri = new SIPURI(uri);
             //this.ua.createRequest("BYE");
-            //this.app.endCurrentCall
-            
-            
-            SetState(CallState.Ended);
-            _app.EndCurrentCall();
-            IncomingCall = null;
-            _outgoingInvite = null;
-            InCall = false;
-            // TODO RE-ENABLE media handling
-            //_mediaHandler.StopAudioRx();
-            //_mediaHandler.StopAudioTx();
-            //_mediaHandler.StopVideoRx();
-            //_mediaHandler.StopVideoTx();
+            //this.app.endCurrentCall 
         }
 
-        internal void CancelCall(Message e)
+        internal void CancelCall()
         {
             if (InCall)
             {
                 if (CallState == CallState.Active)
                 {
                     StopCall();
-                }
-                else
-                {
-                    //SIP_Request cancel = stack.CreateRequest(SIP_Methods.CANCEL, new SIP_t_NameAddress(outgoing_invite.m_pHeader.Get("To:")[0].Value), new SIP_t_NameAddress(settings.ims_public_user_identity));
-                    //foreach (SIP_HeaderField Header in outgoing_invite.m_pHeader)
-                    //{
-                    //    if (!Header.Name.ToUpper().Contains("TO") && !Header.Name.ToUpper().Contains("FROM"))
-                    //    {
-                    //        cancel.m_pHeader.Set(Header.Name, Header.Value);
-                    //    }
-                    //}
-                    //cancel.m_pHeader = outgoing_invite.m_pHeader;
-                    //cancel.CSeq = new SIP_t_CSeq(cancel.CSeq.SequenceNumber, SIP_Methods.CANCEL);
-
-                    //SIP_RequestSender cancel_sender = stack.CreateRequestSender(cancel);
-                    //cancel_sender.ResponseReceived += new EventHandler<SIP_ResponseReceivedEventArgs>(cancel_ResponseReceived);
-                    //cancel_sender.Start();
-                }
-            }
-            else if (e != null)
-            {
-                if (e.Method.ToUpper().Equals("CANCEL"))
-                {
-                    SetState(CallState.Ended);
-                    //SIP_Response response = stack.CreateResponse(SIP_ResponseCodes.x487_Request_Terminated, e.Request);
-                    //e.ServerTransaction.SendResponse(response);
-                }
-
+                }   
             }
         }
     }
