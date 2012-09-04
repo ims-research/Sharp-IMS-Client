@@ -222,15 +222,15 @@ namespace IMS_client
             }
         }
 
-        public void EndCurrentCall()
+        public void EndCall(String CallID)
         {
             if (IsRegistered())
             {
-                if (!String.IsNullOrEmpty(CurrentCallID))
+                if (!String.IsNullOrEmpty(CallID))
                 {
                         foreach (UserAgent userAgent in Useragents)
                         {
-                            if (userAgent.CallID == CurrentCallID)
+                            if (userAgent.CallID == CallID)
                             {
                                 Message bye = userAgent.CreateRequest("BYE");
                                 userAgent.SendRequest(bye);

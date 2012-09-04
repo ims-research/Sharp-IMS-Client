@@ -22,6 +22,7 @@ namespace IMS_client
 
         public Message IncomingCall;
         private Message _outgoingInvite;
+        public String CurrentCallID;
 
         public event EventHandler StateChanged = null;
 
@@ -46,7 +47,7 @@ namespace IMS_client
         {
             InCall = true;
             SDP sdp = new SDP(GenerateSDP(videoEnabled, localAudioPort, localVideoPort));
-            _app.Invite(toUri,sdp);
+            _app.Invite(toUri, sdp);
         }
 
         private string GenerateSDP(bool videoEnabled, int localAudioPort, int localVideoPort)
@@ -99,10 +100,11 @@ namespace IMS_client
                 }
 
                 SDP sdp = new SDP(GenerateSDP(videoEnabled, _localAudioPort, _localVideoPort));
-                _app.AcceptCall(sdp,IncomingCall);
+                _app.AcceptCall(sdp, IncomingCall);
 
                 InCall = true;
                 CallState = CallState.Active;
+                CurrentCallID = IncomingCall.First("Call-ID").Value.ToString();
 
                 //TODO RE-ENABLE MEDIA HANDLING
                 //_mediaHandler.StartAudioRx(_settings.audiocall_local_port, 8);
@@ -111,17 +113,64 @@ namespace IMS_client
                 if (videoEnabled)
                 {
                     //TODO RE-ENABLE MEDIA HANDLING
-                   //_mediaHandler.StartVideoTx(remoteIP, _remoteVideoPort);
-                   //_mediaHandler.StartVideoRx(_settings.videocall_local_port, Helpers.Unquote(IncomingCall.First("From").ToString()));
+                    //_mediaHandler.StartVideoTx(remoteIP, _remoteVideoPort);
+                    //_mediaHandler.StartVideoRx(_settings.videocall_local_port, Helpers.Unquote(IncomingCall.First("From").ToString()));
                 }
 
 
             }
         }
 
-        public void ProcessResponse(Message response)
+        private void ProcessInviteResponse(Message response)
         {
             string remoteIP = "not_found";
+            if ((CallState == CallState.Ringing) || (CallState == CallState.Calling))
+            {
+                CurrentCallID = response.First("Call-ID").Value.ToString();
+                SetState(CallState.Active);
+                bool videoEnabled = false;
+                if (response.Headers.ContainsKey("Content-Type") && response.First("Content-Type").ToString().ToLower().Contains("application/sdp"))
+                {
+                    SDP remoteSDP = new SDP(response.Body);
+                    remoteIP = remoteSDP.Connection.Address;
+                    foreach (SDPMedia media in remoteSDP.Media)
+                    {
+                        if (media.ToString().ToLower().Contains("audio"))
+                        {
+                            _remoteAudioPort = Int32.Parse(media.Port);
+                        }
+                        else if (media.ToString().ToLower().Contains("video"))
+                        {
+                            videoEnabled = true;
+                            _remoteVideoPort = Int32.Parse(media.Port);
+                        }
+                    }
+                }
+                //TODO RE-ENABLE MEDIA HANDLING
+                //_mediaHandler.StartAudioRx(_settings.audiocall_local_port, 8);
+                //_mediaHandler.StartAudioTx(remoteIP, _remoteAudioPort, 8);
+                if (videoEnabled)
+                {
+                    //TODO RE-ENABLE MEDIA HANDLING
+                    //_mediaHandler.StartVideoRx(_settings.videocall_local_port, Helpers.Unquote(_outgoingInvite.First("To").ToString()));
+                    //_mediaHandler.StartVideoTx(remoteIP, _remoteVideoPort);
+                }
+            }
+        }
+
+        private void ProcessByeResponse(Message response)
+        {
+            if (CallState == CallState.Ending)
+            {
+                SetState(CallState.Ended);
+                IncomingCall = null;
+                _outgoingInvite = null;
+                InCall = false;
+            }
+        }
+
+        public void ProcessResponse(Message response)
+        {
             if (response.StatusCodeType == StatusCodes.Informational)
             {
                 if (response.ResponseCode == 100)
@@ -136,47 +185,21 @@ namespace IMS_client
                 {
                     SetState(CallState.Queued);
                 }
-               
             }
             else if (response.StatusCodeType == StatusCodes.Successful)
             {
-                if ((CallState == CallState.Ringing) || (CallState == CallState.Calling))
+                string requestType = response.First("CSeq").ToString().Trim().Split()[1].ToUpper();
+                switch (requestType)
                 {
-                    CurrentCallID = response.First("Call-ID").Value.ToString();
-                    SetState(CallState.Active);
-                    bool videoEnabled = false;
-                    if (response.Headers.ContainsKey("Content-Type") && response.First("Content-Type").ToString().ToLower().Contains("application/sdp"))
-                    {
-                        SDP remoteSDP = new SDP(IncomingCall.Body);
-                        remoteIP = remoteSDP.Connection.Address;
-                        foreach (SDPMedia media in remoteSDP.Media)
-                        {
-                            if (media.ToString().ToLower().Contains("audio"))
-                            {
-                                _remoteAudioPort = Int32.Parse(media.Port);
-                            }
-                            else if (media.ToString().ToLower().Contains("video"))
-                            {
-                                videoEnabled = true;
-                                _remoteVideoPort = Int32.Parse(media.Port);
-                            }
-                        }
-                    }
-
-                    //TODO RE-ENABLE MEDIA HANDLING
-                    //_mediaHandler.StartAudioRx(_settings.audiocall_local_port, 8);
-                    //_mediaHandler.StartAudioTx(remoteIP, _remoteAudioPort, 8);
-                    if (videoEnabled)
-                    {
-                        //TODO RE-ENABLE MEDIA HANDLING
-                        //_mediaHandler.StartVideoRx(_settings.videocall_local_port, Helpers.Unquote(_outgoingInvite.First("To").ToString()));
-                        //_mediaHandler.StartVideoTx(remoteIP, _remoteVideoPort);
-                    }
-
-                }
-                else if (CallState == CallState.Ending)
-                {
-                    SetState(CallState.Ended);
+                    case "INVITE":
+                        ProcessInviteResponse(response);
+                        break;
+                    case "BYE":
+                        ProcessByeResponse(response);
+                        break;
+                    default:
+                        System.Console.WriteLine("Bad response handed to Call Handler");
+                        break;
                 }
             }
             else if (response.StatusCodeType == StatusCodes.GlobalFailure)
@@ -189,7 +212,7 @@ namespace IMS_client
                     InCall = false;
                 }
             }
-        } 
+        }
 
         void CancelResponseReceived(object sender, Message message)
         {
@@ -212,10 +235,13 @@ namespace IMS_client
             OnStateChanged(state);
         }
 
-        internal void StopCall()
+        internal void StopCall(CallState callState)
         {
-            SetState(CallState.Ending);
-            _app.EndCurrentCall();
+            SetState(callState);
+            if (callState == CallState.Ending)
+            {
+                _app.EndCall(CurrentCallID);    
+            }
             IncomingCall = null;
             _outgoingInvite = null;
             InCall = false;
@@ -252,8 +278,8 @@ namespace IMS_client
             {
                 if (CallState == CallState.Active)
                 {
-                    StopCall();
-                }   
+                    StopCall(CallState.Ending);
+                }
             }
         }
     }

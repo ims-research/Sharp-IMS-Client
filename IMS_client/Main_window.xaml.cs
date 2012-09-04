@@ -410,7 +410,6 @@ namespace IMS_client
                         _callHandler.SetState(CallState.Ringing);
                         _callHandler.IncomingCall = request;
                         _app.Useragents.Add(e.UA);
-                        //_callHandler.UA = e.UA;
                         break;
                     }
                 case "CANCEL":
@@ -426,7 +425,7 @@ namespace IMS_client
                     {
                         Message m = e.UA.CreateResponse(200, "OK");
                         e.UA.SendResponse(m);
-                        _callHandler.StopCall();
+                        _callHandler.StopCall(CallState.Ended);
                         break;
                     }
                 case "MESSAGE":
@@ -753,6 +752,7 @@ namespace IMS_client
             _myIMWindow.Close();
             _mediaHandler.VideoWindow.Close();
             Save_Settings_to_Xml("Resources\\settings.xml", _settings);
+
             //TODO Shut down SIP Stack / de register / publish offline etc.
             //if (sip_stack.isRunning)
             //{
@@ -841,9 +841,9 @@ namespace IMS_client
             Register();
         }
 
-        private void DeregisterClick(object sender, RoutedEventArgs e)
+        private void Deregister()
         {
-            if (_app.RegState.ToLower().Contains("registered")|| _app.RegState.ToLower().Contains("Registering"))
+            if (_app.RegState.ToLower().Contains("registered") || _app.RegState.ToLower().Contains("Registering"))
             {
                 _app.Deregister(_settings.ims_public_user_identity);
                 if (_settings.presence_enabled)
@@ -851,6 +851,11 @@ namespace IMS_client
                     _presenceHandler.Publish(_settings.ims_public_user_identity, "closed", "Offline", 3600);
                 }
             }
+        }
+
+        private void DeregisterClick(object sender, RoutedEventArgs e)
+        {
+            Deregister();
         }
 
         #endregion
