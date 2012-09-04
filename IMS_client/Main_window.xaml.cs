@@ -48,6 +48,7 @@ namespace IMS_client
 
         static readonly Random Random = new Random();
 
+        private bool _isComposing = false;
 
         bool _mainWindowIsClosed;
 
@@ -752,7 +753,7 @@ namespace IMS_client
             _myIMWindow.Close();
             _mediaHandler.VideoWindow.Close();
             Save_Settings_to_Xml("Resources\\settings.xml", _settings);
-
+            Deregister();
             //TODO Shut down SIP Stack / de register / publish offline etc.
             //if (sip_stack.isRunning)
             //{
@@ -767,7 +768,8 @@ namespace IMS_client
             //    }
             //    sip_stack.Stop();
             //}
-            Application.Current.Shutdown();
+            //TODO: Why was this here?
+            //Application.Current.Shutdown();
         }
 
         void SettingsWindowClosed(object sender, EventArgs e)
@@ -1094,6 +1096,7 @@ namespace IMS_client
         
         private void UpdateIMMessageStatus(string contact, string status)
         {
+            contact = Helpers.RemoveAngelBrackets(contact);
             foreach (TabItem tabItem in _myIMWindow.IM_TabControl.Items)
             {
                 if (tabItem.Tag.ToString() == contact)
@@ -1199,8 +1202,9 @@ namespace IMS_client
         void SendIMTextChanged(object sender, TextChangedEventArgs e)
         {
             TextBox textBox = sender as TextBox;
-            if (textBox != null && textBox.Text != "" && textBox.Text.Length > 5)
+            if (textBox != null && textBox.Text != "" && !_isComposing)
             {
+                _isComposing = true;
                 _imHandler.SendTypingNotice(textBox.Tag.ToString());
             }
         }
@@ -1243,7 +1247,7 @@ namespace IMS_client
                             textBox.Text = "";
 
                             _imHandler.SendMessage(imgButton.Tag.ToString(), message);
-
+                            _isComposing = false;
                             RichTextBox richTextBox = dockPanel.Children[2] as RichTextBox;
                             if (richTextBox != null)
                             {
