@@ -87,7 +87,7 @@
                         </Button>
                     </Border>
                         </StackPanel>
-                    <TextBox Margin="1" x:Name="dest_uri">Test</TextBox>
+                    <TextBox Margin="1" x:Name="dest_uri" KeyUp="DestUriKeyUp">voicemail@open-ims.test</TextBox>
                 
                     </StackPanel>
             </DockPanel>

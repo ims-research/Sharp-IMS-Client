@@ -845,7 +845,7 @@ namespace IMS_client
 
         private void Deregister()
         {
-            if (_app.RegState.ToLower().Contains("registered") || _app.RegState.ToLower().Contains("Registering"))
+            if (_app.RegState.ToLower() == "registered" || _app.RegState.ToLower().Contains("Registering"))
             {
                 _app.Deregister(_settings.ims_public_user_identity);
                 if (_settings.presence_enabled)
@@ -1506,21 +1506,29 @@ namespace IMS_client
 
         private void AnswerCallClick(object sender, RoutedEventArgs e)
         {
-            Action workAction = delegate
+            if (_callHandler.CallState == CallState.Ended || _callHandler.CallState == CallState.Inactive)
             {
-                System.ComponentModel.BackgroundWorker worker = new System.ComponentModel.BackgroundWorker();
-                worker.DoWork += delegate
-                {
-                    _callHandler.ReceiveCall();
-                };
-                worker.RunWorkerAsync();
-            };
-            Dispatcher.BeginInvoke(DispatcherPriority.Background, workAction);
-            _soundPlayer.Dispatcher.Invoke(
-                 DispatcherPriority.Normal,
-                 new Action(
-                     () => _soundPlayer.Stop()));
-            _callHandler.SetState(CallState.Active);
+                _callHandler.StartCall(dest_uri.Text, false, _settings.audiocall_local_port, _settings.videocall_local_port);
+            }
+            else
+            {
+                Action workAction = delegate
+                                        {
+                                            System.ComponentModel.BackgroundWorker worker =
+                                                new System.ComponentModel.BackgroundWorker();
+                                            worker.DoWork += delegate
+                                                                 {
+                                                                     _callHandler.ReceiveCall();
+                                                                 };
+                                            worker.RunWorkerAsync();
+                                        };
+                Dispatcher.BeginInvoke(DispatcherPriority.Background, workAction);
+                _soundPlayer.Dispatcher.Invoke(
+                    DispatcherPriority.Normal,
+                    new Action(
+                        () => _soundPlayer.Stop()));
+                _callHandler.SetState(CallState.Active);
+            }
         }
 
         private void CancelCallClick(object sender, RoutedEventArgs e)
@@ -1536,6 +1544,13 @@ namespace IMS_client
         private void ImageImageFailed(object sender, ExceptionRoutedEventArgs e)
         {
 
+        }
+
+        private void DestUriKeyUp(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key != System.Windows.Input.Key.Enter) return;
+            _callHandler.StartCall(dest_uri.Text, false, _settings.audiocall_local_port, _settings.videocall_local_port);
+            e.Handled = true;
         }
 
     }

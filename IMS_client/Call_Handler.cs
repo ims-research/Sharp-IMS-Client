@@ -41,6 +41,7 @@ namespace IMS_client
             _mediaHandler = mediaHandler;
             _localAudioPort = localAudioPort;
             _localVideoPort = localVideoPort;
+            CallState = CallState.Inactive;
         }
 
         public void StartCall(string toUri, bool videoEnabled, int localAudioPort, int localVideoPort)

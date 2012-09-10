@@ -56,6 +56,7 @@ namespace IMS_client
             transport.Socket.BeginReceiveFrom(TempBuffer, 0, TempBuffer.Length, SocketFlags.None, ref sendEP, ReceiveDataCB, sendEP);
             Transport = transport;
             Useragents = new List<UserAgent>();
+            RegState = "Not registered";
         }
 
         
