@@ -1508,7 +1508,7 @@ namespace IMS_client
         {
             if (_callHandler.CallState == CallState.Ended || _callHandler.CallState == CallState.Inactive)
             {
-                _callHandler.StartCall(dest_uri.Text, false, _settings.audiocall_local_port, _settings.videocall_local_port);
+                _callHandler.StartCall(dest_uri.Text, true, _settings.audiocall_local_port, _settings.videocall_local_port);
             }
             else
             {
