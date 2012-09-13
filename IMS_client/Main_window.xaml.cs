@@ -1560,5 +1560,19 @@ namespace IMS_client
             e.Handled = true;
         }
 
+        private void MenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            string uri = dest_uri.Text;
+            if (!uri.Contains("<sip:"))
+            {
+                uri = "<sip:" +uri + ">";
+            }
+            if (!MessageTabExists(uri))
+            {
+                CreateMessageTab(uri);
+            }
+            _myIMWindow.Show();
+        }
+
     }
 }

@@ -87,7 +87,17 @@
                         </Button>
                     </Border>
                         </StackPanel>
-                    <TextBox Margin="1" x:Name="dest_uri" KeyUp="DestUriKeyUp">voicemail@open-ims.test</TextBox>
+                    <TextBox Margin="1" x:Name="dest_uri" KeyUp="DestUriKeyUp">
+                        <TextBox.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Click="MenuItem_Click">
+                                    <MenuItem.Header>
+                                        <TextBlock Text="Send IM" >
+                                        </TextBlock>
+                                    </MenuItem.Header>
+                                </MenuItem>
+                            </ContextMenu>
+                        </TextBox.ContextMenu> voicemail@open-ims.test</TextBox>
                 
                     </StackPanel>
             </DockPanel>
