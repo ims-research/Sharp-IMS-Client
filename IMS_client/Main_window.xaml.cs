@@ -198,7 +198,7 @@ namespace IMS_client
 
             TransportInfo localTransport = CreateTransport(_settings.ims_ip_address, port);
             _app = new SIPApp(localTransport);
-            _sipStack = new SIPStack(_app) { ProxyHost = _settings.ims_proxy_cscf_hostname, ProxyPort = _settings.ims_proxy_cscf_port };
+            _sipStack = new SIPStack(_app,"IMS-CLIENT") { ProxyHost = _settings.ims_proxy_cscf_hostname, ProxyPort = _settings.ims_proxy_cscf_port };
 
             // TODO
             //sip_stack.uri.user = "alice";
