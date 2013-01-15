@@ -58,13 +58,24 @@
                 <MenuItem BorderBrush="Black" Padding="15,2,15,2" Header="_Address Book" ItemContainerStyle="{StaticResource MenuItemStyle}" Background="Black" Foreground="White" Click="AddressBookMenuClick"></MenuItem>
             </Menu>
         </StackPanel>
-        <StatusBar Name="Status_Bar" Height="20" DockPanel.Dock="Bottom">
-            <StatusBarItem>
-                <TextBlock Name="Status_Text">
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Vertical">
+            <DockPanel Margin="1">
+                <Button  Click="SetPresenceClick">
+                    <StackPanel Orientation="Horizontal">
+                        <Label VerticalContentAlignment="Center">Set Presence</Label>
+                        <Image Source="/IMS_client;component/Resources/Button_Images/Set-Status.png" Height="30" ImageFailed="ImageImageFailed"></Image>
+                    </StackPanel>
+                    </Button>
+                <TextBox Margin="1" Name="Set_Presence" DockPanel.Dock="Left">Set your current status here</TextBox>
+            </DockPanel>
+            <StatusBar Margin="1" Name="Status_Bar" Height="20">
+                <StatusBarItem>
+                    <TextBlock Name="Status_Text">
                     Initialising
-                </TextBlock>
-            </StatusBarItem>
-        </StatusBar>
+                    </TextBlock>
+                </StatusBarItem>
+            </StatusBar>
+        </StackPanel>
         <DockPanel>
             <DockPanel DockPanel.Dock="Top">
                 <StackPanel>

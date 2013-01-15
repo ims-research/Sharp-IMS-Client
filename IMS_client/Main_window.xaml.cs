@@ -1574,5 +1574,15 @@ namespace IMS_client
             _myIMWindow.Show();
         }
 
+        private void SetPresenceClick(object sender, RoutedEventArgs e)
+        {
+            if (_app.RegState != "Registered")
+            {
+                MessageBox.Show("Please Register First!");
+                return;
+            }
+            string presence = Set_Presence.Text;
+            _presenceHandler.Publish(_settings.ims_public_user_identity, "open", presence, 3600);
+        }
     }
 }
