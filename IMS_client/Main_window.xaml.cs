@@ -776,7 +776,7 @@ namespace IMS_client
             //    sip_stack.Stop();
             //}
             //TODO: Why was this here?
-            //Application.Current.Shutdown();
+            Application.Current.Shutdown();
         }
 
         void SettingsWindowClosed(object sender, EventArgs e)

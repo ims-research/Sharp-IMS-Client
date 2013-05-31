@@ -107,15 +107,15 @@ namespace IMS_client
                 CallState = CallState.Active;
                 CurrentCallID = IncomingCall.First("Call-ID").Value.ToString();
 
-                //TODO RE-ENABLE MEDIA HANDLING
-                //_mediaHandler.StartAudioRx(_settings.audiocall_local_port, 8);
-                //_mediaHandler.StartAudioTx(remoteIP, _remoteAudioPort, 8);
+                
+                _mediaHandler.StartAudioRx(_settings.audiocall_local_port, 8);
+                _mediaHandler.StartAudioTx(remoteIP, _remoteAudioPort, 8);
 
                 if (videoEnabled)
                 {
-                    //TODO RE-ENABLE MEDIA HANDLING
-                    //_mediaHandler.StartVideoTx(remoteIP, _remoteVideoPort);
-                    //_mediaHandler.StartVideoRx(_settings.videocall_local_port, Helpers.Unquote(IncomingCall.First("From").ToString()));
+                    
+                    _mediaHandler.StartVideoTx(remoteIP, _remoteVideoPort);
+                    _mediaHandler.StartVideoRx(_settings.videocall_local_port, Helpers.Unquote(IncomingCall.First("From").ToString()));
                 }
 
 
@@ -147,14 +147,14 @@ namespace IMS_client
                         }
                     }
                 }
-                //TODO RE-ENABLE MEDIA HANDLING
-                //_mediaHandler.StartAudioRx(_settings.audiocall_local_port, 8);
-                //_mediaHandler.StartAudioTx(remoteIP, _remoteAudioPort, 8);
+               
+                _mediaHandler.StartAudioRx(_settings.audiocall_local_port, 8);
+                _mediaHandler.StartAudioTx(remoteIP, _remoteAudioPort, 8);
                 if (videoEnabled)
                 {
-                    //TODO RE-ENABLE MEDIA HANDLING
-                    //_mediaHandler.StartVideoRx(_settings.videocall_local_port, Helpers.Unquote(_outgoingInvite.First("To").ToString()));
-                    //_mediaHandler.StartVideoTx(remoteIP, _remoteVideoPort);
+
+                    _mediaHandler.StartVideoRx(_settings.videocall_local_port, Helpers.Unquote(response.First("To").ToString()));
+                    _mediaHandler.StartVideoTx(remoteIP, _remoteVideoPort);
                 }
             }
         }
@@ -247,11 +247,11 @@ namespace IMS_client
             _outgoingInvite = null;
             InCall = false;
 
-            // TODO RE-ENABLE media handling
-            //_mediaHandler.StopAudioRx();
-            //_mediaHandler.StopAudioTx();
-            //_mediaHandler.StopVideoRx();
-            //_mediaHandler.StopVideoTx();
+            
+            _mediaHandler.StopAudioRx();
+            _mediaHandler.StopAudioTx();
+            _mediaHandler.StopVideoRx();
+            _mediaHandler.StopVideoTx();
 
             //TODO Check ending of call
             //string uri = "";

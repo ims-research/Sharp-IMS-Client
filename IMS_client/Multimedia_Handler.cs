@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Windows;
 using Gst;
 using Gst.GLib;
@@ -23,36 +24,37 @@ namespace IMS_client
         readonly Preferences _settings;
 
         Element _videoTxPipeline, _videoRxPipeline, _audioTxPipeline, _audioRxPipeline;
-        MainLoop _loop;
+        private System.Threading.Thread GstThread;
         public VideoWindow VideoWindow;
 
         public MultimediaHandler(Preferences settings)
         {
             _settings = settings;
-            Environment.SetEnvironmentVariable("GST_DEBUG", "*:2");
-            //C:\gstreamer-newold\lib\gstreamer-0.10
-            //System.Environment.SetEnvironmentVariable("GST_PLUGIN_PATH",  "c:\\gstreamer-newold\\lib\\gstreamer-0.10");
-            //System.Environment.SetEnvironmentVariable("PATH", "c:\\gstreamer-newold\\bin;" + System.Environment.GetEnvironmentVariable("PATH"));
 
-            // DISABLED MEDIA WHILE TESTING
+            // These environment variables are necessary to locate GStreamer libraries, and to stop it from loading
+            // wrong libraries installed elsewhere on the system.
+            string AppPath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            System.Environment.SetEnvironmentVariable("GST_PLUGIN_PATH", "");
+            System.Environment.SetEnvironmentVariable("GST_PLUGIN_SYSTEM_PATH", AppPath + @"\Resources\Libs\plugins");
+            System.Environment.SetEnvironmentVariable("PATH", @"C:\Windows;c:\windows\system32;"
+                                                              + AppPath + @"\Resources\Libs;");
+            System.Environment.SetEnvironmentVariable("GST_REGISTRY", AppPath + @"\Resources\Libs\registry.bin");
 
-            //string[] args2 = { "--gst-debug-level=*:2" };
+            // These are for saving debug information.
+            System.Environment.SetEnvironmentVariable("GST_DEBUG", "*:3");
+            System.Environment.SetEnvironmentVariable("GST_DEBUG_FILE", "GstreamerLog.txt");
+            System.Environment.SetEnvironmentVariable("GST_DEBUG_DUMP_DOT_DIR", AppPath);
 
-            //Gst.Application.Init("Sharp_Client", ref args2);
-            ////Gst.Application.Init();
-            //System.Threading.Thread glib_loop_thread;
-
-            //glib_loop_thread = new System.Threading.Thread(this.Glib_Loop);
-            //glib_loop_thread.Start();
+            GstThread = new System.Threading.Thread(StartGST);
+            GstThread.Start();
 
             VideoWindow = new VideoWindow();
         }
 
-
-        public void GlibLoop()
+        private void StartGST()
         {
-            _loop = new MainLoop();
-            _loop.Run();
+            string[] parameters = new string[0];
+            Gst.Application.Init("Sharp_Client",ref parameters);
         }
 
         public void StartVideoRx(int recvPort,string name)
